@@ -16,7 +16,7 @@
 | 階段 | 檔案 | 一句話目標 | 依賴 | 狀態 |
 |------|------|------------|------|------|
 | Phase 1 | [phase-1.md](phase-1.md) | 蒙地卡羅單機 + POST/GET /api/calculate + 簡單前端可選點數並顯示 π | 無（專案已為 Laravel 12 + Inertia/Vue） | 已完成（2026-02-14 驗收） |
-| Phase 2 | [phase-2.md](phase-2.md) | Dockerfile + 最小 K8s（namespace、deployment、service、ingress），本機可 build/run 或 K8s 部署訪問 | Phase 1 | — |
+| Phase 2 | [phase-2.md](phase-2.md) | Dockerfile + 最小 K8s（namespace、deployment、service、ingress），本機可 build/run 或 K8s 部署訪問 | Phase 1 | 已完成（2026-02-14 驗收） |
 | Phase 3 | [phase-3.md](phase-3.md) | 1C1G VPS 安裝 K3s、部署應用、外網可訪問；觀察單 Pod 資源供 HPA 參考 | Phase 2 | — |
 | Phase 4 | [phase-4.md](phase-4.md) | HPA、分散式計算協調器、K8s API（Pod/HPA）、Laravel Queue（Redis）與 Worker | Phase 3 | — |
 | Phase 5 | [phase-5.md](phase-5.md) | 前端視覺化（控制面板、Canvas、Chart、K8s 狀態、效能對比）+ SSE 即時推送 | Phase 4 | — |

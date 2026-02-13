@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Git
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+.cursor/
+.agents/
+.claude/
+.codex/
+.gemini/
+*.swp
+*.swo
+*~
+
+# Tests
+tests/
+.phpunit.result.cache
+phpunit.xml
+.phpunit.cache/
+
+# Build artifacts
+public/hot
+public/storage
+public/build/*
+!public/build/.gitkeep
+
+# Storage
+storage/app/*
+!storage/app/.gitignore
+!storage/app/public/
+storage/framework/cache/*
+!storage/framework/cache/.gitignore
+storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+storage/framework/testing/*
+!storage/framework/testing/.gitignore
+storage/framework/views/*
+!storage/framework/views/.gitignore
+storage/logs/*
+!storage/logs/.gitignore
+
+# Cache
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+
+# Documentation
+*.md
+!README.md
+.ai-dev/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Kubernetes
+k8s/
+
+# NPM
+npm-debug.log
+yarn-error.log
+
+# Misc
+.DS_Store
+Thumbs.db
+.editorconfig
+.prettierrc
+.prettierignore
+.eslintrc
+.npmrc

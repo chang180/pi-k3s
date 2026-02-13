@@ -35,12 +35,32 @@ npm run dev
 
 - **計算頁面**：http://localhost:8000/calculate — 可選擇點數（10 萬 / 100 萬 / 1000 萬）、發起蒙地卡羅計算並顯示 π 與耗時。
 
+### 容器化測試（Docker）
+
+```bash
+docker build -t pi-k3s:test .
+docker run -p 8080:80 pi-k3s:test
+# 或執行測試腳本
+bash docker/test.sh
+```
+
+訪問 http://localhost:8080、http://localhost:8080/api/calculate
+
+### 本機 K8s（pi-k3s.local）
+
+```bash
+kubectl apply -f k8s/
+```
+
+在 /etc/hosts 加入 `127.0.0.1 pi-k3s.local`，訪問 http://pi-k3s.local。詳細步驟見 [k8s/SETUP.md](k8s/SETUP.md)。
+
 ## 開發進度
 
 | 階段 | 狀態 |
 |------|------|
 | Phase 1：核心計算與 API | 已完成 |
-| Phase 2～6 | 待開發 |
+| Phase 2：容器化與 K8s | 已完成 |
+| Phase 3～6 | 待開發 |
 
 ## 專案計畫與分階段開發
 

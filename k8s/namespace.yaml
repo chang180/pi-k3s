@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pi-k3s
+  labels:
+    name: pi-k3s
+    app: pi-calculator
