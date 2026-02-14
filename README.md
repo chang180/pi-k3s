@@ -54,13 +54,22 @@ kubectl apply -f k8s/
 
 在 /etc/hosts 加入 `127.0.0.1 pi-k3s.local`，訪問 http://pi-k3s.local。詳細步驟見 [k8s/SETUP.md](k8s/SETUP.md)。
 
+### VPS 正式部署（1C1G）
+
+```bash
+./scripts/deploy-vps.sh
+```
+
+自動化腳本會建置 image、傳輸至 VPS、安裝 K3s、部署應用。資源監控：`./scripts/monitor-resources.sh`。完整說明見 [docs/VPS-DEPLOYMENT.md](docs/VPS-DEPLOYMENT.md)。
+
 ## 開發進度
 
 | 階段 | 狀態 |
 |------|------|
 | Phase 1：核心計算與 API | 已完成 |
 | Phase 2：容器化與 K8s | 已完成 |
-| Phase 3～6 | 待開發 |
+| Phase 3：VPS 部署腳本與文件 | 已完成 |
+| Phase 4～6 | 待開發 |
 
 ## 專案計畫與分階段開發
 
