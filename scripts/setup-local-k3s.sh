@@ -106,6 +106,17 @@ else
     APP_KEY_B64=$(echo -n "base64:PLEASE_GENERATE_KEY" | base64 -w 0 2>/dev/null || echo -n "base64:PLEASE_GENERATE_KEY" | base64)
 fi
 
+# 從 .env 讀取 OPENAI_API_KEY（可選，供 AI 助手使用）
+OPENAI_API_KEY=""
+OPENAI_API_KEY_B64=""
+if [ -f .env ]; then
+    OPENAI_API_KEY=$(grep '^OPENAI_API_KEY=' .env 2>/dev/null | cut -d= -f2- | tr -d '"' | tr -d "'" | head -c 500)
+    if [ -n "$OPENAI_API_KEY" ]; then
+        OPENAI_API_KEY_B64=$(echo -n "$OPENAI_API_KEY" | base64 -w 0 2>/dev/null || echo -n "$OPENAI_API_KEY" | base64)
+        echo "已從 .env 讀取 OPENAI_API_KEY 並寫入 Secret"
+    fi
+fi
+
 cat > "$K8S_DIR/secrets.yaml" << SECRETS
 apiVersion: v1
 kind: Secret
@@ -116,6 +127,7 @@ type: Opaque
 data:
   APP_KEY: $APP_KEY_B64
   DB_PASSWORD: ""
+  OPENAI_API_KEY: ${OPENAI_API_KEY_B64:-\"\"}
 SECRETS
 
 # 本機 Deployment（無 hostPort，由 Ingress/Traefik 處理 port 80）
@@ -220,6 +232,11 @@ spec:
             secretKeyRef:
               name: laravel-secrets
               key: DB_PASSWORD
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: OPENAI_API_KEY
         - name: AUTO_MIGRATE
           value: "true"
         resources:

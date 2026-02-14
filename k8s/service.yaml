@@ -8,6 +8,10 @@ metadata:
     component: web
 spec:
   type: ClusterIP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
   selector:
     app: laravel
     component: web

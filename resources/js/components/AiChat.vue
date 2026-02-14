@@ -68,7 +68,20 @@ async function sendMessage(text?: string): Promise<void> {
                     if (data === '</stream>') {
                         continue;
                     }
-                    messages.value[messages.value.length - 1].content += data;
+                    let toAppend: string;
+                    try {
+                        const parsed = JSON.parse(data) as { type?: string; delta?: string };
+                        if (parsed && typeof parsed.delta === 'string') {
+                            toAppend = parsed.delta;
+                        } else if (parsed && typeof parsed === 'object') {
+                            toAppend = '';
+                        } else {
+                            toAppend = data === '[DONE]' ? '' : data;
+                        }
+                    } catch {
+                        toAppend = data === '[DONE]' ? '' : data;
+                    }
+                    messages.value[messages.value.length - 1].content += toAppend;
                     await nextTick();
                     scrollToBottom();
                 }
