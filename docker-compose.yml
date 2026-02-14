@@ -19,7 +19,7 @@ services:
 
       CACHE_DRIVER: file
       SESSION_DRIVER: file
-      QUEUE_CONNECTION: sync
+      QUEUE_CONNECTION: database
 
       AUTO_MIGRATE: "true"
     volumes:

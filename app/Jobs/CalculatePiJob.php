@@ -46,7 +46,7 @@ class CalculatePiJob implements ShouldQueue
             return;
         }
 
-        $result = $monteCarloService->calculate($this->chunkPoints);
+        $result = $monteCarloService->calculateChunk($this->chunkPoints);
 
         $chunk->update([
             'result_inside' => $result['inside'],

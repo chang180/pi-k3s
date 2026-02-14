@@ -33,7 +33,8 @@ npm run dev
 
 瀏覽 http://localhost:8000
 
-- **計算頁面**：http://localhost:8000/calculate — 可選擇點數（10 萬 / 100 萬 / 1000 萬）、發起蒙地卡羅計算並顯示 π 與耗時。
+- **計算頁面**：http://localhost:8000/calculate — 可選擇點數（10 萬 / 100 萬 / 1000 萬）、模式（單機 single / 分散式 distributed），發起蒙地卡羅計算並顯示 π 與耗時。
+- **K8s API**：`GET /api/k8s/status`（Pod 數、HPA 狀態）、`GET /api/k8s/metrics`（CPU/Memory 使用）
 
 ### 容器化測試（Docker）
 
@@ -45,6 +46,23 @@ docker compose up
 ```
 
 訪問 http://localhost:8080（本地為 HTTP，容器會自動偵測 SSL 憑證）
+
+### 本機 K3s + Ingress（http://pi-k3s.local）
+
+透過 k3d 在本機建立 K3s 叢集與 Ingress，以 `http://pi-k3s.local` 存取（無需指定 port）：
+
+```bash
+# 1. 安裝 k3d（若尚未安裝）
+curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+# 2. 設定 hosts（需 sudo）
+echo "127.0.0.1 pi-k3s.local" | sudo tee -a /etc/hosts
+
+# 3. 執行本機 K3s 設定
+./scripts/setup-local-k3s.sh
+```
+
+完成後訪問 **http://pi-k3s.local**
 
 ### VPS 部署（1C1G 優化）
 
@@ -114,10 +132,15 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 │   ├── secrets.yaml.example    # Secret 範本（APP_KEY）
 │   ├── configmap.yaml.example  # ConfigMap 範本（APP_URL 等）
 │   ├── deployment.yaml.example # Deployment 範本（含 HTTPS 註解）
+│   ├── serviceaccount.yaml     # RBAC ServiceAccount
+│   ├── role.yaml               # RBAC Role（pods、HPA）
+│   ├── rolebinding.yaml        # RBAC RoleBinding
+│   ├── ingressclass.yaml       # Traefik IngressClass（本機 k3d 用）
 │   ├── hpa.yaml                # HPA（min=1, max=2，1C1G 可調）
 │   ├── service.yaml            # ClusterIP service
-│   └── ingress.yaml            # Traefik ingress（預設停用）
+│   └── ingress.yaml            # Traefik ingress
 ├── scripts/
+│   ├── setup-local-k3s.sh      # 本機 k3d + Ingress 設定（http://pi-k3s.local）
 │   ├── deploy-on-vps.sh        # VPS 端部署（正式環境主要入口）
 │   └── deploy-vps.sh           # 本機→VPS 傳輸部署（保留，特殊情境用）
 ├── Dockerfile                  # 多階段建置（SQLite-only）
@@ -133,7 +156,8 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 | Phase 1：核心計算與 API | 已完成 |
 | Phase 2：容器化與 K8s | 已完成 |
 | Phase 3：VPS 部署與 1C1G 優化 | 已完成 |
-| Phase 4～6 | 待開發 |
+| Phase 4：HPA 與分散式計算 | 已完成 |
+| Phase 5～6 | 待開發 |
 
 ## 專案計畫與分階段開發
 

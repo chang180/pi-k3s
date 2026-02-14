@@ -1,0 +1,10 @@
+# IngressClass for Traefik (K3s default ingress controller)
+# Apply before ingress.yaml if K3s doesn't create it automatically
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: traefik
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: traefik.io/ingress-controller

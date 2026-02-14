@@ -57,6 +57,9 @@ echo "[3/4] 套用 Kubernetes  manifests..."
 $KUBECTL apply -f k8s/namespace.yaml
 $KUBECTL apply -f k8s/configmap.yaml
 $KUBECTL apply -f k8s/secrets.yaml
+$KUBECTL apply -f k8s/serviceaccount.yaml
+$KUBECTL apply -f k8s/role.yaml
+$KUBECTL apply -f k8s/rolebinding.yaml
 $KUBECTL apply -f k8s/deployment.yaml
 $KUBECTL apply -f k8s/service.yaml
 $KUBECTL apply -f k8s/ingress.yaml

@@ -17,7 +17,7 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 # Auto-detect SSL: if Let's Encrypt certs are mounted, use SSL nginx config
 if [ -f /etc/letsencrypt/live/*/fullchain.pem ] 2>/dev/null; then
     echo "SSL certificates detected, enabling HTTPS..."
-    cp /etc/nginx/http.d/default-ssl.conf /etc/nginx/http.d/default.conf
+    cp /etc/nginx/default-ssl.conf.template /etc/nginx/http.d/default.conf
 fi
 
 # Run Laravel optimizations

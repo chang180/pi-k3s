@@ -18,7 +18,7 @@ data:
   # Cache & Session (file-based for minimal memory)
   CACHE_DRIVER: "file"
   SESSION_DRIVER: "file"
-  QUEUE_CONNECTION: "sync"
+  QUEUE_CONNECTION: "database"
 
   # Broadcasting
   BROADCAST_DRIVER: "log"

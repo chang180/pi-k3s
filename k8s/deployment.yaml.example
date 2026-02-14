@@ -18,6 +18,7 @@ spec:
         app: laravel
         component: web
     spec:
+      serviceAccountName: laravel-app
       containers:
       - name: laravel
         image: pi-k3s:latest
