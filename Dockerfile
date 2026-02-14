@@ -35,30 +35,31 @@ COPY package.json package-lock.json ./
 # Install composer dependencies (needed for artisan commands)
 RUN composer install --no-dev --no-interaction --optimize-autoloader --ignore-platform-reqs
 
-# Install npm dependencies
+# Install npm dependencies (CI mode + timeout 避免在 Docker 內卡住或無輸出)
+ENV CI=1
+ENV npm_config_fetch_timeout=300000
+ENV npm_config_fetch_retries=5
 RUN npm ci
 
 # Build frontend assets (Wayfinder will now work)
 RUN npm run build
 
-# Stage 2: PHP Runtime
+# Stage 2: PHP Runtime (optimized for 1C1G VPS)
 FROM php:8.4-fpm-alpine
 
-# Install system dependencies and PHP extensions
+# Install only necessary system dependencies and PHP extensions (SQLite-only, no MySQL/PostgreSQL)
 RUN apk add --no-cache \
     nginx \
     supervisor \
-    mysql-client \
-    postgresql-dev \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
     libzip-dev \
     oniguruma-dev \
+    sqlite-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
-        pdo_mysql \
-        pdo_pgsql \
+        pdo_sqlite \
         gd \
         zip \
         bcmath \
@@ -77,7 +78,7 @@ COPY . .
 # Copy built frontend assets from previous stage
 COPY --from=frontend-builder /app/public/build ./public/build
 
-# Create .env from example if needed (will be overridden by K8s env vars)
+# Create .env from example if needed (will be overridden by container env vars)
 RUN cp .env.example .env || true
 
 # Install PHP dependencies (production only)
@@ -101,12 +102,18 @@ COPY docker/default.conf /etc/nginx/http.d/default.conf
 # Copy supervisor configuration
 COPY docker/supervisord.conf /etc/supervisord.conf
 
-# PHP-FPM configuration
+# PHP configuration (optimized for 1C1G VPS)
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.interned_strings_buffer=8" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini
+    && echo "opcache.memory_consumption=48" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.interned_strings_buffer=4" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.max_accelerated_files=3000" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "memory_limit=64M" >> /usr/local/etc/php/conf.d/memory.ini \
+    && echo "realpath_cache_size=512K" >> /usr/local/etc/php/conf.d/memory.ini \
+    && echo "realpath_cache_ttl=600" >> /usr/local/etc/php/conf.d/memory.ini
+
+# PHP-FPM pool configuration (low memory: static pool with limited workers)
+COPY docker/php-fpm-pool.conf /usr/local/etc/php-fpm.d/www.conf
 
 # Create entrypoint script
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh

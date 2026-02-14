@@ -1,3 +1,11 @@
+# Ingress configuration for K3s with Traefik
+#
+# NOTE: On a 1C1G VPS, Traefik is disabled to save memory (~100MB).
+# The deployment uses hostPort: 80 instead for direct access.
+#
+# To use this ingress, install K3s WITHOUT --disable=traefik, then apply:
+#   kubectl apply -f k8s/ingress.yaml
+#
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -6,12 +14,10 @@ metadata:
   labels:
     app: laravel
   annotations:
-    # Traefik specific annotations (K3s default)
     traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   ingressClassName: traefik
   rules:
-  # Local development with pi-k3s.local
   - host: pi-k3s.local
     http:
       paths:
@@ -22,7 +28,6 @@ spec:
             name: laravel-service
             port:
               number: 80
-  # Fallback rule without host (for IP-based access)
   - http:
       paths:
       - path: /
@@ -32,14 +37,3 @@ spec:
             name: laravel-service
             port:
               number: 80
-  # For production with actual domain (uncomment and update)
-  # - host: pi.example.com
-  #   http:
-  #     paths:
-  #     - path: /
-  #       pathType: Prefix
-  #       backend:
-  #         service:
-  #           name: laravel-service
-  #           port:
-  #             number: 80
