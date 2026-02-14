@@ -33,8 +33,8 @@ npm run dev
 
 瀏覽 http://localhost:8000
 
-- **計算頁面**：http://localhost:8000/calculate — 可選擇點數（10 萬 / 100 萬 / 1000 萬）、模式（單機 single / 分散式 distributed），發起蒙地卡羅計算並顯示 π 與耗時。
-- **K8s API**：`GET /api/k8s/status`（Pod 數、HPA 狀態）、`GET /api/k8s/metrics`（CPU/Memory 使用）
+- **計算頁面**：http://localhost:8000/calculate — 儀表板可選點數（10 萬 / 100 萬 / 1000 萬）、模式（single / distributed），開始/停止/重置；蒙地卡羅 Canvas、圓周率收斂圖、K8s 狀態、效能對比圖表；分散式模式以 SSE 即時顯示進度。
+- **API**：`POST/GET /api/calculate`、`GET /api/calculate/{id}/stream`（SSE）、`GET /api/history`、`GET /api/k8s/status`、`GET /api/k8s/metrics`
 
 ### 容器化測試（Docker）
 
@@ -157,7 +157,8 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 | Phase 2：容器化與 K8s | 已完成 |
 | Phase 3：VPS 部署與 1C1G 優化 | 已完成 |
 | Phase 4：HPA 與分散式計算 | 已完成 |
-| Phase 5～6 | 待開發 |
+| Phase 5：前端視覺化與 SSE | 已完成 |
+| Phase 6 | 待開發 |
 
 ## 專案計畫與分階段開發
 

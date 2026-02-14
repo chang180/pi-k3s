@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Calculator, Folder, LayoutGrid } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -15,13 +15,18 @@ import {
 } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import AppLogo from './AppLogo.vue';
-import { dashboard } from '@/routes';
+import { calculate, dashboard } from '@/routes';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Calculate Pi',
+        href: calculate(),
+        icon: Calculator,
     },
 ];
 

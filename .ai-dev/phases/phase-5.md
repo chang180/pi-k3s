@@ -1,5 +1,18 @@
 # Phase 5：前端視覺化與即時通訊（SSE）
 
+**狀態**：已完成（覆核驗收通過）
+
+## 驗收紀錄
+
+| 驗收項目 | 結果 |
+|----------|------|
+| 儀表板可完整操作（點數、模式、開始/停止/重置） | ✓ ControlPanel + Calculate.vue 整合，顯示結果與耗時 |
+| 蒙地卡羅 Canvas 與圓周率收斂圖 | ✓ MonteCarloCanvas.vue（Canvas 投點）、PiChart.vue（Chart.js 收斂曲線） |
+| K8s 狀態區（Pod 數、HPA、CPU/Memory） | ✓ K8sStatus.vue 輪詢 /api/k8s/status、/api/k8s/metrics |
+| SSE 即時進度 | ✓ GET /api/calculate/{id}/stream、EventSource、useCalculationStream |
+| 效能對比區（歷史圖表） | ✓ PerformanceComparison.vue、GET /api/history |
+| 後端測試 | ✓ CalculateStreamTest、HistoryTest |
+
 ## 階段目標與產出
 
 - **一句話目標**：完成控制面板、蒙地卡羅 Canvas、圓周率收斂圖（Chart.js）、K8s 狀態區、效能對比區，以及 SSE 即時推送計算進度與 Pod/CPU。
