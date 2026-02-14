@@ -60,6 +60,48 @@ Python-based deployment using paramiko for SSH.
 VPS_PASSWORD='your_password' python3 scripts/deploy-auto.py
 ```
 
+### Method 4: Deploy from VPS (Direct - 推薦除錯用)
+
+**適用情境**：登入 VPS，在該主機上 clone repo、建置、部署，可直接除錯。
+
+**優點**：
+- 不需傳輸大型 Docker 映像
+- 建置與執行都在同一台機器，迭代更快
+- 可用 Cursor / VS Code Remote SSH 直接編輯、除錯
+
+**VPS 前置需求**：
+- K3s 已安裝且運行中
+- Docker 已安裝（用於建置）
+
+```bash
+# 1. SSH 登入 VPS
+ssh ubuntu@165.154.227.179
+
+# 2. 首次需安裝 Docker（若尚未安裝）
+sudo apt update && sudo apt install -y docker.io
+sudo usermod -aG docker $USER
+# 登出後重新 SSH 登入，使 docker 群組生效
+
+# 3. Clone 專案（或使用 Cursor Remote 連線後在遠端 clone）
+git clone https://github.com/YOUR_ORG/pi-k3s.git
+cd pi-k3s
+
+# 4. 首次部署需設定 k8s/secrets.yaml（APP_KEY、DB_PASSWORD 等）
+#    可從本機 scp：scp k8s/secrets.yaml ubuntu@165.154.227.179:~/pi-k3s/k8s/
+
+# 5. 執行 VPS 端部署腳本
+chmod +x scripts/deploy-on-vps.sh
+./scripts/deploy-on-vps.sh
+```
+
+**使用 Cursor Remote SSH**：
+1. 安裝 Cursor（或 VS Code）的 Remote - SSH 延伸
+2. `Cmd/Ctrl + Shift + P` → "Remote-SSH: Connect to Host"
+3. 輸入 `ubuntu@165.154.227.179`
+4. 連線後在終端執行 `git clone ...` 或開啟既有專案目錄
+5. 在遠端專案內執行 `./scripts/deploy-on-vps.sh` 部署
+6. 除錯時可直接執行 `kubectl logs`、`kubectl exec` 等指令
+
 ## Step-by-Step Manual Deployment
 
 If you prefer to deploy manually or troubleshoot issues, follow these steps:
@@ -237,6 +279,24 @@ kubectl get pods -n kube-system | grep traefik
 # Check ingress rules
 kubectl describe ingress -n pi-k3s
 ```
+
+### kubectl TLS Certificate Error (Step 7)
+
+**Error**: `x509: certificate is valid for 10.41.98.152, ..., not 165.154.227.179`
+
+**Cause**: K3s API server certificate does not include the public IP.
+
+**Fix**: Reinstall K3s with `--tls-san` on the VPS:
+
+```bash
+ssh ubuntu@165.154.227.179
+sudo /usr/local/bin/k3s-uninstall.sh
+curl -sfL https://get.k3s.io | sh -s - --tls-san 165.154.227.179
+sleep 15
+exit
+```
+
+Then re-run `./scripts/deploy-vps.sh` from the start (image will be re-transferred and loaded).
 
 ### SSH Connection Issues
 

@@ -20,7 +20,8 @@ spec:
     spec:
       containers:
       - name: laravel
-        image: pi-k3s:latest  # Update with actual image registry path
+        image: pi-k3s:latest
+        imagePullPolicy: Never
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80

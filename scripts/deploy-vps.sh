@@ -76,8 +76,8 @@ echo "[Step 5/8] Checking K3s installation..."
 if ssh $VPS_USER@$VPS_HOST "command -v k3s" >/dev/null 2>&1; then
     echo "✓ K3s already installed"
 else
-    echo "Installing K3s..."
-    ssh $VPS_USER@$VPS_HOST "curl -sfL https://get.k3s.io | sh -"
+    echo "Installing K3s (with --tls-san for external access)..."
+    ssh $VPS_USER@$VPS_HOST "curl -sfL https://get.k3s.io | sh -s - --tls-san $VPS_HOST"
     echo "Waiting for K3s to start..."
     sleep 15
     echo "✓ K3s installed"
@@ -93,7 +93,8 @@ echo ""
 # Step 7: Setup kubectl access
 echo "[Step 7/8] Setting up kubectl..."
 mkdir -p ~/.kube
-scp $VPS_USER@$VPS_HOST:/etc/rancher/k3s/k3s.yaml ~/.kube/config-pi-k3s
+# Copy kubeconfig using sudo cat to avoid permission issues
+ssh $VPS_USER@$VPS_HOST "sudo cat /etc/rancher/k3s/k3s.yaml" > ~/.kube/config-pi-k3s
 sed -i.bak "s/127.0.0.1/$VPS_HOST/g" ~/.kube/config-pi-k3s
 export KUBECONFIG=~/.kube/config-pi-k3s
 echo "✓ kubectl configured"
