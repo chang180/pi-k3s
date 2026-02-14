@@ -302,8 +302,7 @@ For 1C1G VPS:
 
 - **Resource Limits**: Set appropriate CPU/memory limits (currently 500m/256Mi)
 - **Replicas**: Start with 1 replica, scale based on monitoring
-- **Database**: SQLite is suitable for low traffic; upgrade to MySQL for higher load
-- **Caching**: Consider Redis for session/cache in Phase 4
+- **Database**: SQLite 適合 1C1G 低流量；無 MySQL/Redis 以節省資源
 
 ## Next Steps
 
@@ -312,4 +311,4 @@ After successful Phase 3 deployment:
 - Monitor resource usage for 24-48 hours
 - Document single-pod baseline metrics
 - Plan Phase 4 HPA configuration based on actual resource consumption
-- Consider adding MySQL and Redis for production workloads
+- 1C1G 環境維持 SQLite + database queue，不增加 MySQL/Redis

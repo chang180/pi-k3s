@@ -21,7 +21,7 @@
 - **可驗證產出**：
   - `docker build -t pi-k3s:test .` 成功，`docker run -p 8080:80 pi-k3s:test` 後可訪問首頁或 `/api/calculate`。
   - 或於本機 K8s（Docker Desktop / minikube / k3d）執行 `kubectl apply -f k8s/` 後，可透過 Ingress 或 `kubectl port-forward` 打 API。
-  - 可選：補齊 MySQL、Redis 的 K8s 資源（Phase 2 可只做佔位，讓 Phase 3 能先跑單一 Laravel Pod）。
+  - 1C1G 環境不部署 MySQL/Redis；使用 SQLite + database queue。
 
 ---
 
@@ -61,7 +61,7 @@
    - 建立 namespace，例如 `pi-k3s`。
 
 - [x] 5. **新增** [k8s/deployment.yaml](k8s/deployment.yaml)
-   - 部署 Laravel 應用：單一 replica（本階段不啟用 HPA）、image 可參數化（如 `your-dockerhub/pi-k3s:latest` 或佔位）。
+   - 部署 Laravel 應用：單一 replica（HPA 於 Phase 4 啟用）、image 可參數化（如 `your-dockerhub/pi-k3s:latest` 或佔位）。
    - 資源：`requests` memory 128Mi、cpu 100m；`limits` memory 256Mi、cpu 500m（與 plan 中 VPS 優化一致）。
    - 環境變數：可來自 ConfigMap/Secret（此階段可先寫死或佔位，例如 `APP_KEY`、`APP_ENV`、`DB_*`、`REDIS_*` 等，Phase 3 再改為 ConfigMap/Secret）。
 
@@ -74,7 +74,7 @@
 - [x] 8. **可選（Phase 2 可只做佔位或簡化）**
    - [k8s/configmap.yaml](k8s/configmap.yaml)：非敏感環境變數。
    - [k8s/secrets.yaml](k8s/secrets.yaml)：敏感資訊（注意勿提交真實密碼；可用 placeholder 或 sealed secrets）。
-   - [k8s/mysql-statefulset.yaml](k8s/mysql-statefulset.yaml)、[k8s/redis-deployment.yaml](k8s/redis-deployment.yaml)：若希望 Phase 3 直接使用 DB/Redis，可在此階段加入；否則可於 Phase 3 補上，讓 Phase 2 僅驗證「單一 Laravel Pod 可跑」。
+   - 1C1G 環境不部署 mysql-statefulset、redis-deployment；Laravel 使用 SQLite 與 database queue。
 
 ### 文件（寫入本 phase-2.md 或註解）
 
@@ -98,4 +98,4 @@ Phase 3 執行前需具備：
 
 - 可成功 build 且可運行的 Docker image（可推送至 Docker Hub 或私有 registry）。
 - 完整 `k8s/` 清單：至少 `namespace.yaml`、`deployment.yaml`、`service.yaml`、`ingress.yaml`。
-- 若 Phase 2 未含 MySQL/Redis，Phase 3 或 Phase 4 需補上對應 StatefulSet/Deployment 與 Laravel 連線設定。
+- 1C1G 環境使用 SQLite + database queue，不部署 MySQL/Redis。

@@ -113,7 +113,7 @@ echo ""
 # Clean up local file
 rm "$IMAGE_FILE"
 
-# Step 6: Install K3s (lightweight mode - no traefik, no metrics-server, no servicelb)
+# Step 6: Install K3s (lightweight mode - no traefik, no servicelb; metrics-server 保留供 HPA)
 echo "[Step 6/9] Checking K3s installation..."
 ssh $VPS_USER@$VPS_HOST 'bash -s' <<'K3S_EOF'
 if command -v k3s >/dev/null 2>&1 && systemctl is-active --quiet k3s; then
@@ -123,7 +123,7 @@ else
     curl -sfL https://get.k3s.io | sh -
 
     # Patch K3s service with lightweight flags
-    sudo sed -i '/^ExecStart=/,/^$/c\ExecStart=/usr/local/bin/k3s \\\n    server \\\n    --tls-san 165.154.227.179 \\\n    --disable=traefik \\\n    --disable=metrics-server \\\n    --disable=servicelb \\\n    --kubelet-arg=max-pods=30 \\\n    --kubelet-arg=eviction-hard=memory.available<100Mi \\\n    --kube-apiserver-arg=max-requests-inflight=10 \\\n    --kube-apiserver-arg=max-mutating-requests-inflight=5\n' /etc/systemd/system/k3s.service
+    sudo sed -i '/^ExecStart=/,/^$/c\ExecStart=/usr/local/bin/k3s \\\n    server \\\n    --tls-san 165.154.227.179 \\\n    --disable=traefik \\\n    --disable=servicelb \\\n    --kubelet-arg=max-pods=30 \\\n    --kubelet-arg=eviction-hard=memory.available<100Mi \\\n    --kube-apiserver-arg=max-requests-inflight=10 \\\n    --kube-apiserver-arg=max-mutating-requests-inflight=5\n' /etc/systemd/system/k3s.service
 
     sudo systemctl daemon-reload
     sudo systemctl restart k3s
@@ -167,6 +167,7 @@ kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/secrets.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/hpa.yaml 2>/dev/null || true
 
 echo ""
 echo "Waiting for deployment..."

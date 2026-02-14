@@ -114,4 +114,4 @@ Phase 2 執行前需具備：
 - 已註冊 `POST /api/calculate`、`GET /api/calculate/{id}`（或 `{uuid}`）
 - 可運行的前端頁面（例如 [resources/js/pages/Calculate.vue](resources/js/pages/Calculate.vue)）
 
-Queue / Redis 本階段尚未使用；Phase 4 才會引入分散式與 Queue。
+Queue 本階段尚未使用；Phase 4 才會引入分散式與 database queue。

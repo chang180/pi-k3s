@@ -60,6 +60,7 @@ $KUBECTL apply -f k8s/secrets.yaml
 $KUBECTL apply -f k8s/deployment.yaml
 $KUBECTL apply -f k8s/service.yaml
 $KUBECTL apply -f k8s/ingress.yaml
+$KUBECTL apply -f k8s/hpa.yaml 2>/dev/null || true
 
 # Step 4: 等待並驗證
 echo "[4/4] 等待 Deployment 就緒..."

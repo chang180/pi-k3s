@@ -14,7 +14,7 @@
 
 - **環境**：本機 WSL2（或與 Phase 1 相同）；Phase 4 部署與 API 可用。
 - **必須已完成的階段**：Phase 1、2、3、4。
-- **需存在的檔案或設定**：`POST/GET /api/calculate`、`GET /api/k8s/status`、`GET /api/k8s/metrics`；計算進度可被輪詢或由 Phase 4 寫入 Redis/DB，供本階段實作 SSE。
+- **需存在的檔案或設定**：`POST/GET /api/calculate`、`GET /api/k8s/status`、`GET /api/k8s/metrics`；計算進度可被輪詢或由 Phase 4 寫入 DB（Calculation 表），供本階段實作 SSE。
 
 ---
 
@@ -30,7 +30,7 @@
 
 1. **新增** SSE 端點：`GET /api/calculate/{id}/stream` 或 `GET /api/calculate/{id}/events`
    - 回傳 Content-Type: text/event-stream；以 SSE 格式推送事件（例如 `data: {"progress_percent":50,"current_pi":3.14,"pod_count":2}\n\n`）。
-   - 資料來源：Phase 4 若已將進度寫入 Redis 或 DB，可輪詢並推送；或由 Job 完成時寫入、此端點輪詢 Calculation 與 Redis 後推送；或使用 Laravel Broadcasting（可選）。
+   - 資料來源：Phase 4 若已將進度寫入 DB（Calculation 表或子任務表），此端點輪詢 Calculation 後推送；或由 Job 完成時更新 DB、此端點輪詢後推送。
    - 事件欄位建議：progress_percent、current_pi、pod_count、duration_ms 等，與前端約定一致。
 
 2. **新增或擴充** `GET /api/history`
@@ -48,7 +48,7 @@
    - [resources/js/components/ControlPanel.vue](resources/js/components/ControlPanel.vue)：點數選擇（10 萬 / 100 萬 / 1000 萬）、模式（single / distributed）、開始 / 停止 / 重置按鈕；emit 或 v-model 與父層通訊。
    - [resources/js/components/MonteCarloCanvas.vue](resources/js/components/MonteCarloCanvas.vue)：Canvas 繪製單位圓與投點（inside/total）；可依 result_inside、result_total 或即時進度繪製。
    - [resources/js/components/PiChart.vue](resources/js/components/PiChart.vue)：使用 Chart.js 繪製圓周率收斂曲線（X 為樣本數或時間，Y 為 current_pi）；可隨 SSE 或輪詢更新。
-   - [resources/js/components/K8sStatus.vue](resources/js/components/K8sStatus.vue)：顯示 Pod 數、CPU/Memory 使用率；資料來自 GET /api/k8s/status、GET /api/k8s/metrics；可輪詢或 SSE 更新。
+   - [resources/js/components/K8sStatus.vue](resources/js/components/K8sStatus.vue)：顯示 Pod 數、HPA 狀態、CPU/Memory 使用率；資料來自 GET /api/k8s/status、GET /api/k8s/metrics。
    - [resources/js/components/PerformanceComparison.vue](resources/js/components/PerformanceComparison.vue)：以 GET /api/history 資料繪製圖表（例如不同 total_points 或 mode 的 duration_ms 對比、Pod 數與耗時）。
 
 5. **RWD**

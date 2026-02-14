@@ -18,7 +18,7 @@
 | Phase 1 | [phase-1.md](phase-1.md) | 蒙地卡羅單機 + POST/GET /api/calculate + 簡單前端可選點數並顯示 π | 無（專案已為 Laravel 12 + Inertia/Vue） | 已完成（2026-02-14 驗收） |
 | Phase 2 | [phase-2.md](phase-2.md) | Dockerfile + 最小 K8s（namespace、deployment、service、ingress），本機可 build/run 或 K8s 部署訪問 | Phase 1 | 已完成（2026-02-14 驗收） |
 | Phase 3 | [phase-3.md](phase-3.md) | 1C1G VPS 安裝 K3s、部署應用、外網可訪問；觀察單 Pod 資源供 HPA 參考 | Phase 2 | 已完成（2026-02-14 驗收） |
-| Phase 4 | [phase-4.md](phase-4.md) | HPA、分散式計算協調器、K8s API（Pod/HPA）、Laravel Queue（Redis）與 Worker | Phase 3 | — |
+| Phase 4 | [phase-4.md](phase-4.md) | HPA、分散式計算協調器、K8s API（Pod/HPA）、Laravel Queue（database）與 Worker | Phase 3 | — |
 | Phase 5 | [phase-5.md](phase-5.md) | 前端視覺化（控制面板、Canvas、Chart、K8s 狀態、效能對比）+ SSE 即時推送 | Phase 4 | — |
 | Phase 6 | [phase-6.md](phase-6.md) | 測試、README、架構圖、截圖/GIF、Git 整理；可選 Laravel AI SDK | Phase 5 | — |
 
@@ -50,7 +50,7 @@
 |------|----------|------------------------|
 | Phase 1 | 單機計算、API、簡單前端 | MonteCarloService.php, Calculation model + migration, CalculateController.php, StoreCalculationRequest, api routes, Calculate.vue |
 | Phase 2 | 容器化與最小 K8s | Dockerfile, .dockerignore, k8s/namespace.yaml, deployment.yaml, service.yaml, ingress.yaml, 可選 docker/nginx.conf |
-| Phase 3 | VPS 部署與資源觀察 | 部署步驟、可選 mysql/redis K8s、資源記錄 |
+| Phase 3 | VPS 部署與資源觀察 | 部署步驟、SQLite 單 Pod、資源記錄（1C1G 無 MySQL/Redis） |
 | Phase 4 | HPA、分散式、K8s API | hpa.yaml, RBAC, CalculatePiJob, DistributedCalculator, K8sClientService, /api/k8s/status, /api/k8s/metrics |
 | Phase 5 | 視覺化與 SSE | /api/calculate/{id}/stream, /api/history, ControlPanel, MonteCarloCanvas, PiChart, K8sStatus, PerformanceComparison, EventSource |
 | Phase 6 | 測試、文件、可選 AI | README.md, docs/architecture.md, docs/deployment-guide.md, 可選 PiK3sExplainer, /api/ai/ask |

@@ -4,7 +4,7 @@
 
 **專案名稱**：Pi-K3s - 分散式圓周率計算展示平台
 
-**核心目標**：透過蒙地卡羅演算法展示 Kubernetes 的自動擴展（HPA）、負載均衡、分散式計算等核心特性
+**核心目標**：透過蒙地卡羅演算法展示 Kubernetes 的自動擴展（HPA）、負載均衡、分散式計算。1C1G VPS 精簡版：HPA min=1 max=2（可調 3）、無 MySQL/Redis。
 
 **展示價值**：證明 K8s 能根據計算負載自動調配資源，將計算時間從單 Pod 的 35 秒優化到多 Pod 的 15 秒以內
 
@@ -17,7 +17,7 @@
 ### 後端
 - **Laravel 12** (最新版本)
 - **PHP 8.4+**
-- **Redis** (任務佇列與快取)
+- **SQLite**（1C1G 優化；Session/Cache 用 file、Queue 用 database）
 
 ### 前端
 - **Vue 3** (Composition API)
@@ -29,12 +29,12 @@
 ### 容器化與編排
 - **Docker** (容器化)
 - **K3s** (輕量級 Kubernetes，適合 1C1G VPS)
-- **HPA** (Horizontal Pod Autoscaler - 自動擴展)
+- **HPA** (Horizontal Pod Autoscaler - 自動擴展，1C1G min=1 max=2)
 - **Metrics Server** (K3s 內建資源監控)
 
-### 資料庫
-- **MySQL 8.0** (StatefulSet 部署)
-- **Redis** (快取與即時資料)
+### 資料庫與 Queue
+- **SQLite**（Pod 內檔案；1C1G 不需額外 MySQL/Redis）
+- **Laravel Database Queue**（jobs 表；無需 Redis）
 
 ### 開發環境（本機）
 - **WSL2** (Ubuntu) + **Docker Desktop**
@@ -104,34 +104,27 @@ DELETE /api/calculate/{id}     # 取消計算任務
 
 ## Kubernetes 架構設計
 
-### 部署元件
+### 部署元件（1C1G 精簡版，無 MySQL/Redis）
 ```
 pi-k3s/
 ├── Namespace: pi-k3s
 ├── Deployments
-│   ├── laravel-app (1-3 replicas, HPA 控制)
-│   └── redis (1 replica)
-├── StatefulSet
-│   └── mysql (1 replica + PVC)
+│   └── laravel-app (1-2 replicas，HPA 控制；內含 SQLite + database queue)
+├── HPA
+│   └── laravel-app (min=1, max=2，CPU > 60% 觸發擴展)
 ├── Services
-│   ├── laravel-service (ClusterIP)
-│   ├── mysql-service (ClusterIP)
-│   └── redis-service (ClusterIP)
+│   └── laravel-service (ClusterIP)
 ├── Ingress
 │   └── pi-k3s-ingress (Traefik，外部訪問)
-├── HPA
-│   └── laravel-hpa (CPU > 60% 觸發擴展)
 ├── ConfigMap
 │   └── app-config (環境變數)
 └── Secrets
-    └── app-secrets (資料庫密碼等)
+    └── app-secrets (APP_KEY 等)
 ```
 
-### HPA 配置重點（VPS 優化）
-- **最小副本數**：1
-- **最大副本數**：3（避免 1C1G VPS OOM）
-- **擴展條件**：CPU 使用率 > 60%
-- **縮減條件**：CPU 使用率 < 30% 持續 5 分鐘
+### 1C1G 部署重點
+- **HPA**：min=1、max=2（可依實測調為 3）；CPU > 60% 觸發擴展
+- **需啟用 metrics-server**（K3s 預設內建；若以 --disable=metrics-server 安裝則 HPA 無效）
 - **計算點數限制**：最多 1000 萬點（避免過載）
 
 ---
@@ -146,16 +139,11 @@ pi-k3s/
 
 ### 場景二：高負載自動擴展（核心展示）
 - 選擇 1000 萬點
-- CPU 使用率飆升至 70%+
-- HPA 自動擴展：1 → 2 → 3 pods
+- CPU 使用率飆升 → HPA 自動擴展：1 → 2 pods
 - 前端即時顯示擴展過程
-- 計算完成後自動縮減
 
-### 場景三：效能對比測試
-- 固定 1000 萬點計算
-- 分別測試：1 Pod / 2 Pods / 3 Pods
-- 生成效能對比圖表
-- 證明水平擴展的實際效益
+### 場景三：分散式模式
+- `mode=distributed` 時由 database queue 分 chunk 處理
 
 ---
 
@@ -174,7 +162,7 @@ pi-k3s/
 - [ ] Dockerfile（多階段構建）、.dockerignore
 - [ ] 最小 K8s 清單：`namespace`、`deployment`、`service`、`ingress`，先能從外網訪問單一 Laravel Pod
 - [ ] 本機以 Docker Desktop 內 K8s（或 minikube/k3d）驗證
-- [ ] 再補 `mysql-statefulset`、`redis-deployment`、`configmap`、`secrets` 等
+- [ ] 補 `configmap`、`secrets`（1C1G 不部署 MySQL/Redis，僅 SQLite）
 
 ### Phase 3：正式環境部署（1C1G VPS）
 - [ ] VPS：Ubuntu、對外 IP 可用
@@ -183,11 +171,9 @@ pi-k3s/
 - [ ] 在 1C1G 上觀察單一 Pod 的記憶體與 CPU，作為 HPA 參數依據
 
 ### Phase 4：HPA 與分散式計算
-- [ ] 驗證 Metrics Server 運作
-- [ ] 分散式計算協調器：任務切子任務、Laravel Queue（Redis）、多 Worker Pod 消費並回寫進度
-- [ ] K8s API 整合：RBAC（ServiceAccount + Role）、取得 Pod 狀態與 HPA
-- [ ] HPA 配置：min=1、max=3，CPU 閾值依 VPS 實測調整
-- [ ] 壓力測試與自動擴展驗證
+- [ ] HPA：min=1、max=2，CPU 閾值 60%；需啟用 metrics-server
+- [ ] 分散式計算協調器：任務切子任務、Laravel Queue（database driver）、Worker 消費並回寫進度
+- [ ] K8s API 整合：RBAC、取得 Pod 狀態與 HPA（GET /api/k8s/status、GET /api/k8s/metrics）
 
 ### Phase 5：前端視覺化與即時通訊
 - [ ] Vue 3 元件：控制面板、蒙地卡羅 Canvas、圓周率收斂圖、K8s 狀態、效能對比
@@ -239,10 +225,8 @@ pi-k3s/
 │   ├── namespace.yaml
 │   ├── deployment.yaml
 │   ├── service.yaml
-│   ├── hpa.yaml
 │   ├── ingress.yaml
-│   ├── mysql-statefulset.yaml
-│   ├── redis-deployment.yaml
+│   ├── hpa.yaml
 │   ├── configmap.yaml
 │   └── secrets.yaml
 │
@@ -264,13 +248,13 @@ pi-k3s/
 
 ### 可行性要點
 - 技術棧與現有專案（Laravel 12 + Inertia/Vue）一致；K8s 整合可用 PHP Kubernetes Client 或 `kubectl`，需在叢集內配置 RBAC（ServiceAccount + Role）讓 Laravel Pod 讀取 HPA/Pod/Metrics。
-- 分散式計算：Laravel 為協調者，任務切子任務後丟 Redis Queue，多 Worker Pod 消費並回寫進度，由 Laravel 彙總結果。
-- 1C1G VPS：從一開始就設好 Pod 資源 limits、HPA 最大副本數與計算點數上限，並在實際環境觀測後再微調 HPA 閾值。
+- 分散式計算：Laravel 為協調者，任務切子任務後丟 Laravel Database Queue（jobs 表），多 Worker Pod 消費並回寫進度，由 Laravel 彙總結果。1C1G 不部署 Redis。
+- 1C1G VPS：設好 Pod 資源 limits、HPA maxReplicas=2（可調 3）、計算點數上限。需啟用 metrics-server。
 
 ### K3s 特性
 - 內建 Traefik Ingress Controller（不需額外安裝）
 - 內建 Local Path Provisioner（自動處理 PVC）
-- 內建 Metrics Server（HPA 可直接使用）
+- 內建 Metrics Server（HPA 必需，勿以 --disable=metrics-server 安裝）
 - 輕量級設計（512MB RAM 即可運行）
 
 ### VPS 資源限制
@@ -285,7 +269,7 @@ pi-k3s/
       memory: "256Mi"
       cpu: "500m"
   ```
-- 最多 3 個 Pod（避免 OOM）
+- HPA min=1、max=2（1C1G 可調 3）
 - 計算點數限制在 1000 萬以內
 
 ### K8s 整合關鍵
@@ -294,8 +278,8 @@ pi-k3s/
 - ServiceAccount 綁定適當的 Role
 
 ### 效能優化
-- Redis 快取計算結果
-- Laravel Queue 處理長時間計算
+- 計算結果存 SQLite（或可選 file cache）
+- Laravel Database Queue 處理長時間計算（1C1G 無 Redis）
 - SSE 連接池管理
 - 前端節流（Throttle）更新頻率
 
@@ -419,8 +403,8 @@ kubectl rollout status deployment/laravel -n pi-k3s
 
 ## 備註
 
-- **優先順序**：核心計算與 API → 容器化與最小 K8s → 正式 VPS 部署 → HPA 與分散式 → 視覺化與 SSE → 測試、文件與可選 AI
-- **VPS 限制**：1C1G 需嚴控資源，Pod requests/limits、HPA 最大副本數、計算點數上限須設好並實測，避免 OOM
+- **優先順序**：核心計算與 API → 容器化與最小 K8s → 正式 VPS 部署 → 分散式與 K8s API → 視覺化與 SSE → 測試、文件與可選 AI
+- **VPS 限制**：1C1G 嚴控資源，HPA max=2（可調 3）、Pod requests/limits、計算點數上限須設好，避免 OOM
 - **文件與 Git**：README 和架構圖與程式碼同等重要；各階段完成後提交，方便回溯
 
 ---
@@ -442,14 +426,14 @@ kubectl rollout status deployment/laravel -n pi-k3s
 
 | 情境 | 說明 | 實作要點 |
 |------|------|----------|
-| **1. 說明型 Agent（教育/展示）** | 用自然語言回答「什麼是蒙地卡羅法？」、「HPA 如何觸發？」 | 建立一個 `PiK3sExplainer` Agent，`instructions()` 寫入專案與 K8s 的簡短說明，可選 `RemembersConversations` 做多輪問答；用 `prompt()` 或 `stream()` 回傳。 |
+| **1. 說明型 Agent（教育/展示）** | 用自然語言回答「什麼是蒙地卡羅法？」、「K8s 如何部署？」 | 建立一個 `PiK3sExplainer` Agent，`instructions()` 寫入專案與 K8s 的簡短說明，可選 `RemembersConversations` 做多輪問答；用 `prompt()` 或 `stream()` 回傳。 |
 | **2. 自然語言觸發計算** | 用戶輸入「用 100 萬點跑一次分散式」→ 解析意圖並呼叫既有 `POST /api/calculate` | Agent 使用 **Structured Output**（例如 `points`, `mode`）或 **Tools**：Tool 內呼叫 `MonteCarloService` 或 HTTP 觸發計算，回傳任務 ID 給前端。 |
-| **3. 監控與建議** | 根據當前 K8s 狀態與歷史，用 AI 產出簡短說明或建議 | 在 `GET /api/k8s/status` 或獨立 `/api/insights` 中，把 Pod 數、CPU、最近 HPA 事件等塞進 prompt，呼叫 Agent 回傳一段文字（或 Structured Output）；可放進 Queue 避免拖慢 API。 |
+| **3. 監控與建議** | 根據當前 K8s 狀態與歷史，用 AI 產出簡短說明或建議 | 在 `GET /api/k8s/status` 或獨立 `/api/insights` 中，把 Pod 數、CPU 等塞進 prompt，呼叫 Agent 回傳一段文字（或 Structured Output）；可放進 Queue 避免拖慢 API。 |
 | **4. 對話式儀表板** | 儀表板旁加一個「問 Pi-K3s」輸入框，串接 Agent | 前端送訊息到 `POST /api/ai/chat`，後端用 Agent 的 `stream()` 回傳 SSE，前端用同一 SSE 或 Vercel AI SDK 協議消費；可搭配 `forUser($user)->prompt()` 做簡單多輪對話。 |
 
 ### 建議的整合順序
 
-1. **先完成核心功能**：蒙地卡羅、K8s 狀態、HPA、前端視覺化與 SSE，再加 AI，避免範圍過大。
+1. **先完成核心功能**：蒙地卡羅、K8s 狀態、前端視覺化與 SSE，再加 AI，避免範圍過大。
 2. **第一階段 AI**：只做「說明型 Agent」+ 一個簡單 `POST /api/ai/ask`（或 `/api/ai/chat`），用 `stream()` 回傳 SSE，前端一個輸入框 + 串流顯示即可。
 3. **第二階段**：視需求加 Tool（觸發計算、查歷史）或 Structured Output（解析「100 萬點 / 分散式」），並可選用 `RemembersConversations` 或自建 `Conversational` 存歷史。
 4. **部署注意**：AI 呼叫為外部 API，需在 K8s/ConfigMap 或 Secret 中設定 `OPENAI_API_KEY` 等；若用 Queue 處理 AI，確保 Worker 能讀到相同 env。
@@ -467,7 +451,7 @@ kubectl rollout status deployment/laravel -n pi-k3s
 本計畫已拆成六個階段的獨立開發文件，供不同 AI 依序執行，每階段一份細部工作清單與驗收條件：
 
 - **索引與指引**：[.ai-dev/phases/README.md](.ai-dev/phases/README.md) — 階段一覽、依賴關係、給執行 AI 的通用指引（必讀 plan.md、CLAUDE.md/AGENTS.md、測試與 Pint）。
-- **階段文件**：[.ai-dev/phases/phase-1.md](.ai-dev/phases/phase-1.md) ～ [.ai-dev/phases/phase-6.md](.ai-dev/phases/phase-6.md)，依序為：核心計算與 API、容器化與最小 K8s、正式 VPS 部署、HPA 與分散式計算、前端視覺化與 SSE、測試與文件與可選 AI。
+- **階段文件**：[.ai-dev/phases/phase-1.md](.ai-dev/phases/phase-1.md) ～ [.ai-dev/phases/phase-6.md](.ai-dev/phases/phase-6.md)，依序為：核心計算與 API、容器化與最小 K8s、正式 VPS 部署、分散式計算與 K8s API、前端視覺化與 SSE、測試與文件與可選 AI。
 
 執行時僅需讀取被指派的 `phase-N.md` 與本 plan.md 即可獨立完成該階段並與下一階段交接。
 
@@ -501,6 +485,6 @@ kubectl rollout status deployment/laravel -n pi-k3s
 - [ ] Phase 1：蒙地卡羅 + API + 簡單前端可跑出 π
 - [ ] Phase 2：Docker + 最小 K8s 清單可於本機或 VPS 跑通
 - [ ] Phase 3：應用已部署至 VPS 並可從外網訪問
-- [ ] Phase 4：HPA 與分散式計算驗證通過
+- [ ] Phase 4：分散式計算與 K8s API 驗證通過
 - [ ] Phase 5：前端視覺化與 SSE 完成
 - [ ] Phase 6：測試、README、架構圖、截圖/GIF、Git 整理完成

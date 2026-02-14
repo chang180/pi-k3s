@@ -63,6 +63,9 @@ chmod +x scripts/deploy-on-vps.sh
 # 查看 pod 狀態
 sudo k3s kubectl get pods -n pi-k3s
 
+# 查看 HPA 狀態（需 metrics-server 啟用）
+sudo k3s kubectl get hpa -n pi-k3s
+
 # 查看日誌
 sudo k3s kubectl logs -n pi-k3s -l app=laravel -f
 
@@ -70,6 +73,14 @@ sudo k3s kubectl logs -n pi-k3s -l app=laravel -f
 curl http://165.154.227.179
 curl -X POST http://165.154.227.179/api/calculate -H 'Content-Type: application/json' -d '{"total_points":100000}'
 ```
+
+## HPA 與 metrics-server
+
+HPA 需 metrics-server 提供 CPU 指標。若 K3s 以 `--disable=metrics-server` 安裝，HPA 無法運作。
+
+**檢查**：`sudo k3s kubectl get pods -n kube-system | grep metrics`
+
+**若無 metrics-server**：重新安裝 K3s，勿加 `--disable=metrics-server`（deploy-vps.sh 已修正；手動安裝則用預設或 `curl -sfL https://get.k3s.io | sh -s - --tls-san 165.154.227.179`）。
 
 ## 使用 Cursor / VS Code Remote SSH
 

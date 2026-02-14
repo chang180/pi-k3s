@@ -111,8 +111,8 @@ echo -n 'base64:YOUR_GENERATED_KEY_HERE' | base64
 ### Update ConfigMap
 
 Edit `k8s/configmap.yaml` to update:
-- Database connection settings
-- Redis connection (for Phase 4)
+- Database connection settings（1C1G 使用 SQLite）
+- QUEUE_CONNECTION=database（1C1G 無 Redis）
 - Other environment variables
 
 ### Update Ingress
@@ -166,7 +166,6 @@ kubectl delete namespace pi-k3s
 
 ## Next Steps
 
-- Phase 3: Implement distributed calculation with queue system
-- Phase 4: Add Redis for caching and session management
-- Add HPA (Horizontal Pod Autoscaler) for auto-scaling
-- Set up monitoring and logging
+- Phase 4: HPA、分散式計算、K8s API、Laravel database queue 與 Worker
+- Add HPA (min=1, max=2) for auto-scaling；需啟用 metrics-server
+- Set up monitoring and logging（1C1G 維持 SQLite + database queue，無 Redis）

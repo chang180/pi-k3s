@@ -1,0 +1,21 @@
+# HPA：1C1G 環境，min=1、max=2（記憶體考量，可依實測改為 3）
+# 需啟用 metrics-server（K3s 預設內建，若以 --disable=metrics-server 安裝則 HPA 無效）
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: laravel-app
+  namespace: pi-k3s
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: laravel-app
+  minReplicas: 1
+  maxReplicas: 2
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60

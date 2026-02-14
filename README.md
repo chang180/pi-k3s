@@ -5,7 +5,7 @@
 ## 核心目標
 
 - 以蒙地卡羅法估算 π，並在 K3s 上以多 Pod 分散計算
-- 展示 HPA 依 CPU 負載自動擴縮（1 → 3 replicas）
+- 展示 HPA 依 CPU 負載自動擴縮（1 → 2 replicas，1C1G 可調為 3）
 - 前端即時視覺化：投點動畫、圓周率收斂曲線、K8s 狀態與效能對比
 
 ## 技術棧
@@ -85,7 +85,7 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 #### 優化細節
 
 **K3s 輕量化**（省 ~200MB RAM）
-- 停用 Traefik、metrics-server、servicelb
+- 停用 Traefik、servicelb；保留 metrics-server 供 HPA 使用
 - 使用 `hostPort` 直接暴露服務，無需 ingress controller
 
 **應用容器優化**
@@ -114,6 +114,7 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 │   ├── secrets.yaml.example    # Secret 範本（APP_KEY）
 │   ├── configmap.yaml.example  # ConfigMap 範本（APP_URL 等）
 │   ├── deployment.yaml.example # Deployment 範本（含 HTTPS 註解）
+│   ├── hpa.yaml                # HPA（min=1, max=2，1C1G 可調）
 │   ├── service.yaml            # ClusterIP service
 │   └── ingress.yaml            # Traefik ingress（預設停用）
 ├── scripts/

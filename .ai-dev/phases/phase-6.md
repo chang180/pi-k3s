@@ -39,14 +39,14 @@
 
 3. **撰寫** [README.md](README.md)
    - 專案簡介（一句話說明 Pi-K3s 目的）。
-   - 本地開發：PHP、Composer、Node、Redis 需求；`composer install`、`npm install`、`.env`、`php artisan migrate`、`php artisan serve`、`npm run dev`。
+   - 本地開發：PHP、Composer、Node 需求（1C1G 無 Redis/MySQL）；`composer install`、`npm install`、`.env`、`php artisan migrate`、`php artisan serve`、`npm run dev`。
    - K8s 部署：Docker build/push、VPS 上 K3s 安裝、`kubectl apply -f k8s/`、Ingress 或 port-forward 訪問方式。
    - 環境需求：1C1G VPS、對外 IP、可選 Docker Hub 帳號。
    - 效能數據：實際測試結果對比（可從效能測試或手動記錄取得）。
    - 技術細節：HPA 配置、分散式計算邏輯簡述；連結至 docs/。
 
 4. **撰寫** [docs/architecture.md](docs/architecture.md)
-   - 以 Mermaid 繪製系統架構圖（使用者 → Ingress → Laravel Pod(s) → MySQL/Redis；Queue Worker；K8s HPA/Metrics）。
+   - 以 Mermaid 繪製系統架構圖（使用者 → Ingress → Laravel Pod(s) → SQLite + database queue；Queue Worker；K8s HPA/Metrics）。1C1G 精簡版無 MySQL/Redis。
    - 簡述蒙地卡羅流程、分散式協調、K8s 整合要點。
 
 5. **撰寫** [docs/deployment-guide.md](docs/deployment-guide.md)

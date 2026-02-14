@@ -214,16 +214,14 @@ Additional security measures to consider:
 Phase 4 will implement:
 
 1. **Horizontal Pod Autoscaler (HPA)**
-   - Based on CPU/memory metrics
-   - Auto-scale from 1-3 replicas
+   - min=1、max=2（1C1G 可調 3）
+   - 需啟用 metrics-server
 
-2. **MySQL Database**
-   - Replace SQLite with MySQL StatefulSet
-   - Persistent storage with PVC
+2. **資料庫**（1C1G 維持 SQLite）
+   - 可選：PVC 持久化 storage（目前使用 EmptyDir）
 
-3. **Redis Cache**
-   - Session and cache storage
-   - Improve performance
+3. **Queue**（已用 database driver）
+   - 1C1G 不部署 Redis；Laravel database queue 已足夠
 
 4. **Advanced Monitoring**
    - Prometheus metrics
