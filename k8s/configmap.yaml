@@ -7,7 +7,7 @@ data:
   APP_NAME: "Pi Calculator"
   APP_ENV: "production"
   APP_DEBUG: "false"
-  APP_URL: "http://pi-k3s.local"
+  APP_URL: "https://pi-k3s.chang180backend.com"
   LOG_CHANNEL: "stderr"
   LOG_LEVEL: "info"
 

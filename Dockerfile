@@ -119,7 +119,7 @@ COPY docker/php-fpm-pool.conf /usr/local/etc/php-fpm.d/www.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 80
+EXPOSE 80 443
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

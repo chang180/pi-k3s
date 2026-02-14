@@ -27,6 +27,10 @@ spec:
           hostPort: 80
           name: http
           protocol: TCP
+        - containerPort: 443
+          hostPort: 443
+          name: https
+          protocol: TCP
         env:
         # Import from ConfigMap
         - name: APP_NAME
@@ -44,6 +48,11 @@ spec:
             configMapKeyRef:
               name: laravel-config
               key: APP_DEBUG
+        - name: APP_URL
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: APP_URL
         - name: LOG_CHANNEL
           valueFrom:
             configMapKeyRef:
@@ -124,6 +133,13 @@ spec:
         volumeMounts:
         - name: storage
           mountPath: /var/www/html/storage
+        - name: letsencrypt
+          mountPath: /etc/letsencrypt
+          readOnly: true
       volumes:
       - name: storage
         emptyDir: {}
+      - name: letsencrypt
+        hostPath:
+          path: /etc/letsencrypt
+          type: Directory
