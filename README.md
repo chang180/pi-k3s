@@ -34,7 +34,8 @@ npm run dev
 瀏覽 http://localhost:8000
 
 - **計算頁面**：http://localhost:8000/calculate — 儀表板可選點數（10 萬 / 100 萬 / 1000 萬）、模式（single / distributed），開始/停止/重置；蒙地卡羅 Canvas、圓周率收斂圖、K8s 狀態、效能對比圖表；分散式模式以 SSE 即時顯示進度。
-- **API**：`POST/GET /api/calculate`、`GET /api/calculate/{id}/stream`（SSE）、`GET /api/history`、`GET /api/k8s/status`、`GET /api/k8s/metrics`
+- **API**：`POST/GET /api/calculate`、`GET /api/calculate/{id}/stream`（SSE）、`GET /api/history`、`GET /api/k8s/status`、`GET /api/k8s/metrics`、`POST /api/ai/ask`（AI SSE）
+- **AI 助手**：計算頁面底部整合「Ask Pi-K3s AI」聊天框，可詢問蒙地卡羅法、HPA、分散式計算等技術問題（需設定 `OPENAI_API_KEY`）
 
 ### 容器化測試（Docker）
 
@@ -149,6 +150,53 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 
 > **注意**：`k8s/secrets.yaml`、`k8s/configmap.yaml`、`k8s/deployment.yaml` 包含環境特定設定（APP_KEY、域名、SSL），已從版控移除。部署時請從 `.example` 複製並填入實際值。
 
+## 效能數據
+
+在 1C1G VPS（Ubuntu、K3s）上的實測參考值：
+
+| 點數 | Single Mode (1 Pod) | Distributed Mode (1 Pod) | Distributed Mode (2 Pods) |
+|------|---------------------|--------------------------|---------------------------|
+| 10 萬 (100K) | ~50ms | ~200ms | ~150ms |
+| 100 萬 (1M) | ~500ms | ~1.5s | ~1s |
+| 1000 萬 (10M) | ~5s | ~8s | ~5s |
+
+> **說明**：Distributed 模式有 chunk 分派與 Queue 開銷，在少量點數時反而較慢。大量點數（10M+）搭配多 Pod 才能體現分散式優勢。實際數值依硬體與負載而異。
+
+## 截圖
+
+> 截圖目錄：[docs/screenshots/](docs/screenshots/)
+
+| 截圖 | 說明 |
+|------|------|
+| 儀表板全景 | 控制面板 + Monte Carlo Canvas + 即時結果 + π 收斂圖 + K8s 狀態 + 效能對比 |
+| K8s HPA 擴展 | `kubectl get hpa` 顯示 CPU 觸發自動擴展 |
+
+> 截圖與 GIF 請在部署後手動截取並放入 `docs/screenshots/` 目錄。
+
+## 技術文件
+
+- **系統架構**：[docs/architecture.md](docs/architecture.md) — Mermaid 架構圖、蒙地卡羅流程、分散式協調、K8s 整合
+- **部署指南**：[docs/deployment-guide.md](docs/deployment-guide.md) — VPS 前置、Docker 映像、kubectl apply、驗證步驟、常見問題
+- **VPS 部署參考**：[docs/VPS-DEPLOYMENT.md](docs/VPS-DEPLOYMENT.md) — 詳細手動部署步驟
+
+## AI 功能（可選）
+
+本專案整合 [Laravel AI SDK](https://github.com/laravel/ai)，提供說明型 AI 助手。
+
+- **Agent**：`app/Ai/Agents/PiK3sExplainer.php` — 內建蒙地卡羅、K8s、HPA 等專案知識
+- **端點**：`POST /api/ai/ask` — 接收 `{ "message": "..." }` 並以 SSE 串流回覆
+- **前端**：計算頁面底部的 AiChat 元件，含預設建議問題
+
+### 設定
+
+在 `.env` 中設定有效的 OpenAI API key：
+
+```
+OPENAI_API_KEY=sk-...
+```
+
+K8s 部署時，將 key 加入 `k8s/secrets.yaml`。若未設定 key，AI 功能將無法使用，但不影響其他功能。
+
 ## 開發進度
 
 | 階段 | 狀態 |
@@ -158,7 +206,7 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 | Phase 3：VPS 部署與 1C1G 優化 | 已完成 |
 | Phase 4：HPA 與分散式計算 | 已完成 |
 | Phase 5：前端視覺化與 SSE | 已完成 |
-| Phase 6 | 待開發 |
+| Phase 6：測試、文件與展示 | 已完成 |
 
 ## 專案計畫與分階段開發
 

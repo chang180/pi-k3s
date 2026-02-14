@@ -20,7 +20,7 @@
 | Phase 3 | [phase-3.md](phase-3.md) | 1C1G VPS 安裝 K3s、部署應用、外網可訪問；觀察單 Pod 資源供 HPA 參考 | Phase 2 | 已完成（2026-02-14 驗收） |
 | Phase 4 | [phase-4.md](phase-4.md) | HPA、分散式計算協調器、K8s API（Pod/HPA）、Laravel Queue（database）與 Worker | Phase 3 | 已完成 |
 | Phase 5 | [phase-5.md](phase-5.md) | 前端視覺化（控制面板、Canvas、Chart、K8s 狀態、效能對比）+ SSE 即時推送 | Phase 4 | 已完成（覆核驗收） |
-| Phase 6 | [phase-6.md](phase-6.md) | 測試、README、架構圖、截圖/GIF、Git 整理；可選 Laravel AI SDK | Phase 5 | — |
+| Phase 6 | [phase-6.md](phase-6.md) | 測試、README、架構圖、截圖/GIF、Git 整理；可選 Laravel AI SDK | Phase 5 | 已完成（覆核驗收） |
 
 ---
 

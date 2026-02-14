@@ -1,5 +1,19 @@
 # Phase 6：測試、文件與可選 AI
 
+**狀態**：已完成（覆核驗收通過）
+
+## 驗收紀錄
+
+| 驗收項目 | 結果 |
+|----------|------|
+| `php artisan test` 通過 | ✓ 83 tests, 315 assertions |
+| `vendor/bin/pint --dirty --format agent` 通過 | ✓ |
+| README 可依步驟完成本地與 K8s 部署 | ✓ 專案簡介、本地開發、Docker、k3d、VPS 部署、效能數據、截圖說明、技術文件連結 |
+| 架構圖（Mermaid）與部署指南齊全 | ✓ docs/architecture.md（架構圖、蒙地卡羅流程、分散式協調、K8s 整合）、docs/deployment-guide.md（VPS 前置、kubectl 順序、驗證、常見問題） |
+| 截圖說明與目錄 | ✓ README 截圖區、docs/screenshots/README.md 列出必要與可選截圖（實際檔案部署後手動放入） |
+| 可選 AI：/api/ai/ask 串流、文件註明 API key | ✓ AiController、PiK3sExplainer、AiChat.vue、AiAskTest；README「AI 功能」與 OPENAI_API_KEY 說明 |
+| 端到端 / 關鍵路徑測試 | ✓ CriticalPathTest（single/distributed E2E、k8s status/metrics、history） |
+
 ## 階段目標與產出
 
 - **一句話目標**：補齊端到端與效能測試、撰寫 README 與架構圖與部署指南、截圖或 GIF、Git 整理；可選整合 Laravel AI SDK 說明型 Agent 與 `/api/ai/ask` 串流。

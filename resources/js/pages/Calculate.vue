@@ -7,6 +7,7 @@ import MonteCarloCanvas from '@/components/MonteCarloCanvas.vue';
 import PiChart from '@/components/PiChart.vue';
 import K8sStatus from '@/components/K8sStatus.vue';
 import PerformanceComparison from '@/components/PerformanceComparison.vue';
+import AiChat from '@/components/AiChat.vue';
 import { useCalculationStream } from '@/composables/useCalculationStream';
 import type { BreadcrumbItem, CalculationResult } from '@/types';
 
@@ -247,6 +248,9 @@ function formatNumber(num: number): string {
                 <K8sStatus />
                 <PerformanceComparison ref="performanceRef" />
             </div>
+
+            <!-- AI Chat -->
+            <AiChat />
 
             <!-- Query Section -->
             <div class="rounded-xl border border-sidebar-border/70 bg-card p-6 dark:border-sidebar-border">
