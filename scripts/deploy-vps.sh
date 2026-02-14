@@ -113,23 +113,32 @@ echo ""
 # Clean up local file
 rm "$IMAGE_FILE"
 
-# Step 6: Install K3s (lightweight mode - no traefik, no servicelb; metrics-server 保留供 HPA)
+# Step 6: Install K3s (lightweight mode - no traefik, no servicelb；metrics-server 必須啟用供 HPA)
 echo "[Step 6/9] Checking K3s installation..."
 ssh $VPS_USER@$VPS_HOST 'bash -s' <<'K3S_EOF'
 if command -v k3s >/dev/null 2>&1 && systemctl is-active --quiet k3s; then
     echo "✓ K3s already installed and running"
+    # 確認 metrics-server 未遭停用（HPA 依賴）
+    if sudo grep -q "disable=metrics-server" /etc/systemd/system/k3s.service 2>/dev/null; then
+        echo "⚠ metrics-server 被停用，將重新啟用..."
+        sudo sed -i 's/--disable=metrics-server//g' /etc/systemd/system/k3s.service
+        sudo systemctl daemon-reload
+        sudo systemctl restart k3s
+        sleep 15
+        echo "✓ metrics-server 已重新啟用"
+    fi
 else
     echo "Installing K3s (lightweight mode)..."
     curl -sfL https://get.k3s.io | sh -
 
-    # Patch K3s service with lightweight flags
+    # Patch K3s service: 僅停用 traefik/servicelb，勿加入 --disable=metrics-server
     sudo sed -i '/^ExecStart=/,/^$/c\ExecStart=/usr/local/bin/k3s \\\n    server \\\n    --tls-san 165.154.227.179 \\\n    --disable=traefik \\\n    --disable=servicelb \\\n    --kubelet-arg=max-pods=30 \\\n    --kubelet-arg=eviction-hard=memory.available<100Mi \\\n    --kube-apiserver-arg=max-requests-inflight=10 \\\n    --kube-apiserver-arg=max-mutating-requests-inflight=5\n' /etc/systemd/system/k3s.service
 
     sudo systemctl daemon-reload
     sudo systemctl restart k3s
     echo "Waiting for K3s to be ready..."
     sleep 20
-    echo "✓ K3s installed (lightweight mode)"
+    echo "✓ K3s installed (lightweight mode, metrics-server enabled for HPA)"
 fi
 K3S_EOF
 echo ""
@@ -165,6 +174,9 @@ echo "[Step 9/9] Deploying application..."
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/serviceaccount.yaml
+kubectl apply -f k8s/role.yaml
+kubectl apply -f k8s/rolebinding.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
 kubectl apply -f k8s/hpa.yaml 2>/dev/null || true

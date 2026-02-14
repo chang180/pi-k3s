@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'kubernetes' => [
+        'host' => env('KUBERNETES_SERVICE_HOST'),
+        'port' => env('KUBERNETES_SERVICE_PORT'),
+    ],
+
 ];

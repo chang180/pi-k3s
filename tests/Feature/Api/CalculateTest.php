@@ -152,3 +152,47 @@ test('calculation result pi is within reasonable range', function () {
     expect($pi)->toBeGreaterThan(3.0)
         ->toBeLessThan(3.3);
 });
+
+test('distributed mode returns 202 and creates calculation with running status', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $response = $this->postJson('/api/calculate', [
+        'total_points' => 500_000,
+        'mode' => 'distributed',
+    ]);
+
+    $response->assertStatus(202)
+        ->assertJsonStructure(['id', 'uuid', 'total_points', 'mode', 'status'])
+        ->assertJson([
+            'mode' => 'distributed',
+            'status' => 'running',
+        ]);
+
+    $calculation = \App\Models\Calculation::find($response->json('id'));
+    expect($calculation)->not->toBeNull();
+    expect($calculation->chunks()->count())->toBeGreaterThan(0);
+});
+
+test('distributed mode completes when jobs are processed', function () {
+    \Illuminate\Support\Facades\Config::set('queue.default', 'database');
+
+    $response = $this->postJson('/api/calculate', [
+        'total_points' => 500_000,
+        'mode' => 'distributed',
+    ]);
+
+    $response->assertStatus(202);
+    $calculation = \App\Models\Calculation::find($response->json('id'));
+    expect($calculation->chunks()->count())->toBeGreaterThan(0);
+
+    $monteCarlo = app(\App\Services\MonteCarloService::class);
+    foreach ($calculation->chunks as $chunk) {
+        (new \App\Jobs\CalculatePiJob($calculation->id, $chunk->chunk_index, $chunk->total_points))
+            ->handle($monteCarlo);
+    }
+
+    $calculation->refresh();
+    expect($calculation->status)->toBe('completed');
+    expect($calculation->result_pi)->toBeFloat();
+    expect($calculation->result_pi)->toBeGreaterThan(3.0)->toBeLessThan(3.3);
+});

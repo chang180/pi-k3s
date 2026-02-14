@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Calculation extends Model
@@ -56,6 +57,11 @@ class Calculation extends Model
         }
 
         return $this->where('id', $value)->first();
+    }
+
+    public function chunks(): HasMany
+    {
+        return $this->hasMany(CalculationChunk::class)->orderBy('chunk_index');
     }
 
     protected static function booted(): void

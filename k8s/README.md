@@ -49,10 +49,26 @@ On WSL2, you may need to update both Windows and WSL2 hosts files.
 
 ### Deploy to Kubernetes
 
-```bash
-# Apply all K8s manifests
-kubectl apply -f k8s/
+Apply manifests in order (RBAC before deployment that uses the ServiceAccount):
 
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/serviceaccount.yaml
+kubectl apply -f k8s/role.yaml
+kubectl apply -f k8s/rolebinding.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/hpa.yaml
+# Or apply all: kubectl apply -f k8s/
+```
+
+**RBAC**：`serviceaccount.yaml`、`role.yaml`、`rolebinding.yaml` 讓 Laravel Pod 可讀取 Pod 與 HPA 狀態（`GET /api/k8s/status`、`GET /api/k8s/metrics`）。Deployment 使用 `serviceAccountName: laravel-app`。
+
+**HPA**：需啟用 metrics-server（K3s 預設啟用；勿以 `--disable=metrics-server` 安裝）。
+
+```bash
 # Check deployment status
 kubectl get all -n pi-k3s
 
@@ -164,8 +180,23 @@ kubectl delete -f k8s/
 kubectl delete namespace pi-k3s
 ```
 
+## Rebuild Image and Redeploy
+
+```bash
+# 1. Rebuild image
+docker build -t pi-k3s:latest .
+
+# 2. (Optional) Tag and push to registry, or on VPS load from tar
+# docker save pi-k3s:latest | gzip > pi-k3s.tar.gz
+# scp pi-k3s.tar.gz user@vps:/tmp/ && ssh user@vps 'sudo k3s ctr images import /tmp/pi-k3s.tar.gz'
+
+# 3. Restart deployment to pick up new image
+kubectl rollout restart deployment/laravel-app -n pi-k3s
+kubectl rollout status deployment/laravel-app -n pi-k3s
+```
+
 ## Next Steps
 
 - Phase 4: HPA、分散式計算、K8s API、Laravel database queue 與 Worker
-- Add HPA (min=1, max=2) for auto-scaling；需啟用 metrics-server
-- Set up monitoring and logging（1C1G 維持 SQLite + database queue，無 Redis）
+- HPA (min=1, max=2) 已配置；需啟用 metrics-server
+- QUEUE_CONNECTION=database；Supervisor 內含 queue worker
