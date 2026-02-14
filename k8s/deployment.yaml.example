@@ -27,10 +27,11 @@ spec:
           hostPort: 80
           name: http
           protocol: TCP
-        - containerPort: 443
-          hostPort: 443
-          name: https
-          protocol: TCP
+        # Uncomment for HTTPS (requires Let's Encrypt certs on host)
+        # - containerPort: 443
+        #   hostPort: 443
+        #   name: https
+        #   protocol: TCP
         env:
         # Import from ConfigMap
         - name: APP_NAME
@@ -133,13 +134,15 @@ spec:
         volumeMounts:
         - name: storage
           mountPath: /var/www/html/storage
-        - name: letsencrypt
-          mountPath: /etc/letsencrypt
-          readOnly: true
+        # Uncomment for HTTPS (requires Let's Encrypt certs on host)
+        # - name: letsencrypt
+        #   mountPath: /etc/letsencrypt
+        #   readOnly: true
       volumes:
       - name: storage
         emptyDir: {}
-      - name: letsencrypt
-        hostPath:
-          path: /etc/letsencrypt
-          type: Directory
+      # Uncomment for HTTPS
+      # - name: letsencrypt
+      #   hostPath:
+      #     path: /etc/letsencrypt
+      #     type: Directory

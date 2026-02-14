@@ -12,7 +12,7 @@
 
 - **後端**：Laravel 12、PHP 8.4+、SQLite（輕量部署）
 - **前端**：Vue 3、Inertia v2、Vite、Tailwind CSS v4、Chart.js、Canvas
-- **部署**：Docker、K3s（輕量模式）、hostPort 直連（1C1G VPS 友善）
+- **部署**：Docker、K3s（輕量模式）、Let's Encrypt HTTPS（1C1G VPS 友善）
 
 ## 本地開發
 
@@ -44,16 +44,48 @@ docker run -p 8080:80 pi-k3s:test
 docker compose up
 ```
 
-訪問 http://localhost:8080
+訪問 http://localhost:8080（本地為 HTTP，容器會自動偵測 SSL 憑證）
 
 ### VPS 部署（1C1G 優化）
 
-本專案已針對 1 核 1GB RAM 的 VPS 做了全面優化：
+本專案已針對 1 核 1GB RAM 的 VPS 做了全面優化。
 
-**K3s 輕量化**
-- 停用 Traefik、metrics-server、servicelb（省 ~200MB RAM）
-- 使用 `hostPort: 80` 直接暴露服務，無需 ingress controller
-- API server 並行請求數限制，降低記憶體開銷
+#### 1. 複製範本並填入正式環境設定
+
+```bash
+# K8s 環境設定（已從版控移除，需手動建立）
+cp k8s/secrets.yaml.example k8s/secrets.yaml       # 填入真正的 APP_KEY
+cp k8s/configmap.yaml.example k8s/configmap.yaml   # 修改 APP_URL 為你的域名
+cp k8s/deployment.yaml.example k8s/deployment.yaml # 啟用 HTTPS 則取消註解
+```
+
+#### 2. HTTPS 設定（Let's Encrypt）
+
+```bash
+# 在 VPS 上取得 SSL 憑證
+sudo certbot certonly --standalone -d your-domain.example.com
+
+# 在 k8s/deployment.yaml 中取消 HTTPS 相關的註解：
+#   - hostPort 443
+#   - letsencrypt volume mount
+```
+
+容器啟動時會自動偵測 `/etc/letsencrypt` 下的憑證，有則啟用 HTTPS + HTTP→HTTPS 跳轉。
+
+#### 3. 部署
+
+```bash
+# 從本地機器執行（需要 Docker 和 SSH 存取 VPS）
+./scripts/deploy-vps.sh
+```
+
+自動化腳本會：建置映像 → 傳輸至 VPS → 安裝輕量 K3s → 匯入映像 → 部署應用。
+
+#### 優化細節
+
+**K3s 輕量化**（省 ~200MB RAM）
+- 停用 Traefik、metrics-server、servicelb
+- 使用 `hostPort` 直接暴露服務，無需 ingress controller
 
 **應用容器優化**
 - PHP-FPM：static 模式、2 workers
@@ -65,36 +97,32 @@ docker compose up
 - 自動建立 1GB swap（swappiness=10）
 - 自動停用不必要的系統服務（multipathd、ModemManager、udisks2 等）
 
-```bash
-# 從本地機器執行（需要 Docker 和 SSH 存取 VPS）
-./scripts/deploy-vps.sh
-```
-
-自動化腳本會：建置映像 → 傳輸至 VPS → 安裝輕量 K3s → 匯入映像 → 部署應用。
-
 ## 專案結構
 
 ```
-├── app/                    # Laravel 應用程式碼
-├── docker/                 # Docker 配置
-│   ├── nginx.conf          # Nginx 主配置（1 worker）
-│   ├── default.conf        # Nginx server 配置
-│   ├── php-fpm-pool.conf   # PHP-FPM pool（2 workers, static）
-│   ├── supervisord.conf    # Supervisor 程序管理
-│   └── entrypoint.sh       # 容器啟動腳本
-├── k8s/                    # Kubernetes manifests
-│   ├── namespace.yaml
-│   ├── configmap.yaml
-│   ├── secrets.yaml
-│   ├── deployment.yaml     # hostPort: 80, 低資源限制
-│   ├── service.yaml
-│   └── ingress.yaml        # Traefik 用（預設停用）
+├── app/                        # Laravel 應用程式碼
+├── docker/
+│   ├── nginx.conf              # Nginx 主配置（1 worker）
+│   ├── default.conf            # Nginx server — HTTP only（本地開發）
+│   ├── default-ssl.conf        # Nginx server — HTTPS + redirect（正式區）
+│   ├── php-fpm-pool.conf       # PHP-FPM pool（2 workers, static）
+│   ├── supervisord.conf        # Supervisor 程序管理
+│   └── entrypoint.sh           # 容器啟動（自動偵測 SSL 憑證）
+├── k8s/
+│   ├── namespace.yaml          # K8s namespace
+│   ├── secrets.yaml.example    # Secret 範本（APP_KEY）
+│   ├── configmap.yaml.example  # ConfigMap 範本（APP_URL 等）
+│   ├── deployment.yaml.example # Deployment 範本（含 HTTPS 註解）
+│   ├── service.yaml            # ClusterIP service
+│   └── ingress.yaml            # Traefik ingress（預設停用）
 ├── scripts/
-│   ├── deploy-vps.sh       # VPS 自動部署腳本
-│   └── deploy-on-vps.sh    # 部署入口
-├── Dockerfile              # 多階段建置（SQLite-only）
-└── docker-compose.yml      # 本地開發用
+│   ├── deploy-vps.sh           # VPS 自動部署腳本
+│   └── deploy-on-vps.sh        # 部署入口
+├── Dockerfile                  # 多階段建置（SQLite-only）
+└── docker-compose.yml          # 本地開發用（HTTP）
 ```
+
+> **注意**：`k8s/secrets.yaml`、`k8s/configmap.yaml`、`k8s/deployment.yaml` 包含環境特定設定（APP_KEY、域名、SSL），已從版控移除。部署時請從 `.example` 複製並填入實際值。
 
 ## 開發進度
 

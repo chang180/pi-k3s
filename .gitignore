@@ -27,3 +27,8 @@ yarn-error.log
 /.vscode
 /.zed
 __pycache__/
+
+# K8s environment-specific configs (use *.example as templates)
+k8s/secrets.yaml
+k8s/configmap.yaml
+k8s/deployment.yaml
