@@ -6,10 +6,10 @@
 
 | 驗收項目 | 結果 |
 |----------|------|
-| 部署腳本 | deploy-vps.sh、monitor-resources.sh、deploy-manual.sh、deploy-auto.py、setup-ssh-key.sh 已建立，語法正確 |
+| 部署腳本 | deploy-on-vps.sh（VPS 端主要入口）、deploy-vps.sh、monitor-resources.sh、deploy-manual.sh、deploy-auto.py、setup-ssh-key.sh 已建立，語法正確 |
 | 文件 | docs/VPS-DEPLOYMENT.md、docs/PHASE-3-SUMMARY.md 涵蓋手動/自動部署、故障排除、資源監控 |
 | 腳本涵蓋範圍 | K3s 安裝、image 傳輸、kubectl 設定、k8s 部署、資源觀察與 HPA 建議 |
-| 實際 VPS 部署 | 需於 1C1G VPS 上執行 `./scripts/deploy-vps.sh` 驗證外網訪問 |
+| 實際 VPS 部署 | 需於 1C1G VPS 上 SSH 登入後執行 `./scripts/deploy-on-vps.sh` 驗證外網訪問 |
 
 ---
 
@@ -25,7 +25,7 @@
 
 ## 前置條件
 
-- **環境**：1C1G VPS（Ubuntu）、具對外 IP；本機可 SSH 至 VPS 或從本機以 `KUBECONFIG` 遠端操作。
+- **環境**：1C1G VPS（Ubuntu）、具對外 IP；正式環境部署於 VPS 上直接執行（SSH 登入後 clone、建置、部署）。
 - **必須已完成的階段**：Phase 2。
 - **需存在的檔案或設定**：Phase 2 產出的 Docker image（可推送至 Docker Hub 或私有 registry）、完整 `k8s/` 清單（至少 namespace、deployment、service、ingress）。
 
@@ -45,7 +45,7 @@
    - SSH 連線至 VPS（例如 `ssh root@<VPS_IP>`）。
    - Ubuntu 更新：`apt update && apt upgrade -y`（可選）。
    - 安裝 K3s：`curl -sfL https://get.k3s.io | sh -`。
-   - 驗證：`kubectl get nodes`（若以 root 執行安裝，kubeconfig 通常在 `/etc/rancher/k3s/k3s.yaml`；本機遠端操作時將此檔複製到本機並設定 `KUBECONFIG`）。
+   - 驗證：`sudo k3s kubectl get nodes`（於 VPS 上）。
 
 ### 部署步驟
 
@@ -54,7 +54,7 @@
    - 若 VPS 無法拉取私有 registry，需在 K8s 中設定 imagePullSecrets 或使用公開 image。
 
 - [x] 3. **K8s 部署**
-   - 在 VPS 上（或從本機 `KUBECONFIG` 指向 VPS）執行：`kubectl apply -f k8s/`（依序或一次套用 namespace、configmap、secrets、deployment、service、ingress 等）。
+   - 在 VPS 上執行：`./scripts/deploy-on-vps.sh` 或 `sudo k3s kubectl apply -f k8s/`（依序或一次套用 namespace、configmap、secrets、deployment、service、ingress 等）。
    - 確認 Pod 為 Running：`kubectl get pods -n pi-k3s`；若有 Init 或 Migration Job，需一併套用並確認完成。
    - 確認 Ingress：`kubectl get ingress -n pi-k3s`；Traefik 會分配對外 IP 或 Host，或需設定 DNS 指向 VPS IP。
 
@@ -86,6 +86,6 @@
 
 Phase 4 執行前需具備：
 
-- 可用的 K8s 叢集（1C1G VPS 上的 K3s）— 可執行 `./scripts/deploy-vps.sh` 完成部署。
+- 可用的 K8s 叢集（1C1G VPS 上的 K3s）— 於 VPS 上執行 `./scripts/deploy-on-vps.sh` 完成部署。
 - Laravel 可連線 MySQL 與 Redis（若已部署）；或文件註明將在 Phase 4 補上。
 - 實測的單 Pod 資源數據（CPU/Memory），供 HPA 與 resource limits 設定 — 可執行 `./scripts/monitor-resources.sh` 取得。

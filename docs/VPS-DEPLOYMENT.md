@@ -2,76 +2,25 @@
 
 ## Overview
 
-This guide provides instructions for deploying the pi-k3s application to a remote VPS running K3s.
+正式環境部署在 VPS 主機上直接執行（登入 SSH 後 clone、建置、部署），不從本機傳輸。
 
 **Target VPS**: ubuntu@165.154.227.179
 **Namespace**: pi-k3s
 **K8s Distribution**: K3s (lightweight Kubernetes)
-**Ingress**: Traefik (default K3s ingress controller)
 
-## Prerequisites
+## Prerequisites（VPS 上）
 
-- Docker installed locally
-- kubectl installed locally
-- SSH access to VPS
-- VPS running Ubuntu with at least 1GB RAM
-
-## Deployment Methods
-
-We provide several deployment scripts to suit different needs:
-
-### Method 1: Automated Deployment (Recommended)
-
-**Script**: `scripts/deploy-vps.sh`
-
-This script automates the entire deployment process, including:
-- Building Docker image locally
-- Transferring image to VPS
-- Installing K3s (if not present)
-- Loading image into K3s
-- Deploying to Kubernetes
-
-**Requirements**: SSH key authentication must be configured
-
-```bash
-# Run the automated deployment
-./scripts/deploy-vps.sh
-```
-
-The script will set up SSH keys automatically if they're not already configured.
-
-### Method 2: Manual Deployment
-
-**Script**: `scripts/deploy-manual.sh`
-
-Step-by-step guided deployment with manual intervention at each step.
-
-```bash
-./scripts/deploy-manual.sh
-```
-
-### Method 3: Python Deployment (Alternative)
-
-**Script**: `scripts/deploy-auto.py`
-
-Python-based deployment using paramiko for SSH.
-
-```bash
-VPS_PASSWORD='your_password' python3 scripts/deploy-auto.py
-```
-
-### Method 4: Deploy from VPS (Direct - 推薦除錯用)
-
-**適用情境**：登入 VPS，在該主機上 clone repo、建置、部署，可直接除錯。
-
-**優點**：
-- 不需傳輸大型 Docker 映像
-- 建置與執行都在同一台機器，迭代更快
-- 可用 Cursor / VS Code Remote SSH 直接編輯、除錯
-
-**VPS 前置需求**：
 - K3s 已安裝且運行中
-- Docker 已安裝（用於建置）
+- Docker 已安裝（用於建置映像）
+- VPS 為 Ubuntu，至少 1GB RAM
+
+## 部署方式（推薦）
+
+### Method 1: VPS 端一鍵部署（正式環境主要方式）
+
+**Script**: `scripts/deploy-on-vps.sh`
+
+登入 VPS 後，clone 專案並執行部署腳本。
 
 ```bash
 # 1. SSH 登入 VPS
@@ -80,144 +29,93 @@ ssh ubuntu@165.154.227.179
 # 2. 首次需安裝 Docker（若尚未安裝）
 sudo apt update && sudo apt install -y docker.io
 sudo usermod -aG docker $USER
-# 登出後重新 SSH 登入，使 docker 群組生效
+# 登出後重新 SSH 登入
 
-# 3. Clone 專案（或使用 Cursor Remote 連線後在遠端 clone）
-git clone https://github.com/YOUR_ORG/pi-k3s.git
+# 3. Clone 專案
+git clone https://github.com/chang180/pi-k3s.git
 cd pi-k3s
 
-# 4. 首次部署需設定 k8s/secrets.yaml（APP_KEY、DB_PASSWORD 等）
-#    可從本機 scp：scp k8s/secrets.yaml ubuntu@165.154.227.179:~/pi-k3s/k8s/
+# 4. 首次部署：從範本複製並填入 secrets、configmap、deployment
+cp k8s/secrets.yaml.example k8s/secrets.yaml
+cp k8s/configmap.yaml.example k8s/configmap.yaml
+cp k8s/deployment.yaml.example k8s/deployment.yaml
+# 編輯 secrets.yaml 填入 APP_KEY 等
 
-# 5. 執行 VPS 端部署腳本
+# 5. 執行部署
 chmod +x scripts/deploy-on-vps.sh
 ./scripts/deploy-on-vps.sh
 ```
 
-**使用 Cursor Remote SSH**：
-1. 安裝 Cursor（或 VS Code）的 Remote - SSH 延伸
-2. `Cmd/Ctrl + Shift + P` → "Remote-SSH: Connect to Host"
-3. 輸入 `ubuntu@165.154.227.179`
-4. 連線後在終端執行 `git clone ...` 或開啟既有專案目錄
-5. 在遠端專案內執行 `./scripts/deploy-on-vps.sh` 部署
-6. 除錯時可直接執行 `kubectl logs`、`kubectl exec` 等指令
+**使用 Cursor / VS Code Remote SSH**：
+1. 安裝 Remote - SSH 延伸
+2. `Cmd/Ctrl + Shift + P` → "Remote-SSH: Connect to Host" → `ubuntu@165.154.227.179`
+3. 連線後開啟專案目錄，可直接編輯、建置、部署、除錯
 
-## Step-by-Step Manual Deployment
+## 其他部署方式（保留，特殊情境用）
 
-If you prefer to deploy manually or troubleshoot issues, follow these steps:
+以下腳本從本機建置並傳輸至 VPS，保留供特殊情境（如 CI、自動化）使用。
 
-### 1. Build Docker Image
+### Method 2: 本機→VPS 傳輸部署
+
+**Script**: `scripts/deploy-vps.sh`
+
+需在本機安裝 Docker、kubectl，並設定 SSH 至 VPS。
 
 ```bash
-# Build image with timestamp tag
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-docker build -t pi-k3s:latest -t pi-k3s:$TIMESTAMP .
+# 從本機執行（需 SSH key 已設定）
+./scripts/deploy-vps.sh
 ```
 
-### 2. Save and Transfer Image
+### Method 3: 手動引導
+
+**Script**: `scripts/deploy-manual.sh`
+
+### Method 4: Python 自動化
+
+**Script**: `scripts/deploy-auto.py`
 
 ```bash
-# Save image to tar.gz
-docker save pi-k3s:latest | gzip > /tmp/pi-k3s-image.tar.gz
-
-# Transfer to VPS
-scp /tmp/pi-k3s-image.tar.gz ubuntu@165.154.227.179:/tmp/
-
-# Clean up local file
-rm /tmp/pi-k3s-image.tar.gz
+VPS_PASSWORD='your_password' python3 scripts/deploy-auto.py
 ```
 
-### 3. Install K3s on VPS
+## Step-by-Step Manual Deployment（於 VPS 上）
 
-SSH to VPS and install K3s:
+若需手動逐步操作，於 VPS 上執行：
+
+### 1. Build Docker Image（於 VPS 上）
 
 ```bash
-ssh ubuntu@165.154.227.179
-
-# Install K3s
-curl -sfL https://get.k3s.io | sh -
-
-# Wait for K3s to start
-sudo systemctl status k3s
-
-# Verify installation
-sudo k3s kubectl get nodes
+cd ~/pi-k3s  # 或你的專案路徑
+docker build -t pi-k3s:latest .
 ```
 
-### 4. Load Docker Image on VPS
+### 2. Import Image to K3s
 
 ```bash
-# Still on VPS
-sudo k3s ctr images import /tmp/pi-k3s-image.tar.gz
-
-# Verify image is loaded
-sudo k3s ctr images ls | grep pi-k3s
-
-# Clean up
-rm /tmp/pi-k3s-image.tar.gz
+docker save pi-k3s:latest | sudo k3s ctr images import -
 ```
 
-### 5. Setup kubectl Access
-
-Back on your local machine:
+### 3. Apply Manifests
 
 ```bash
-# Copy kubeconfig from VPS
-mkdir -p ~/.kube
-scp ubuntu@165.154.227.179:/etc/rancher/k3s/k3s.yaml ~/.kube/config-pi-k3s
+# 確保 secrets、configmap、deployment 已從 .example 複製並填入
+sudo k3s kubectl apply -f k8s/namespace.yaml
+sudo k3s kubectl apply -f k8s/configmap.yaml
+sudo k3s kubectl apply -f k8s/secrets.yaml
+sudo k3s kubectl apply -f k8s/deployment.yaml
+sudo k3s kubectl apply -f k8s/service.yaml
+sudo k3s kubectl apply -f k8s/ingress.yaml
 
-# Update server address
-sed -i.bak "s/127.0.0.1/165.154.227.179/g" ~/.kube/config-pi-k3s
-
-# Set as current kubeconfig
-export KUBECONFIG=~/.kube/config-pi-k3s
-
-# Test connection
-kubectl get nodes
+# Wait for deployment
+sudo k3s kubectl wait --for=condition=available --timeout=180s deployment/laravel-app -n pi-k3s
 ```
 
-### 6. Update Deployment Manifest
-
-Ensure the deployment uses the local image:
+### 4. Verify
 
 ```bash
-# Update image reference
-sed -i "s|image:.*pi-k3s.*|image: pi-k3s:latest|g" k8s/deployment.yaml
-
-# Ensure imagePullPolicy is set to Never
-# Add this line after the image line if not present:
-#   imagePullPolicy: Never
-```
-
-### 7. Deploy to K3s
-
-```bash
-# Apply all manifests in order
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/secrets.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/ingress.yaml
-
-# Wait for deployment to be ready
-kubectl wait --for=condition=available --timeout=180s deployment/laravel-app -n pi-k3s
-```
-
-### 8. Verify Deployment
-
-```bash
-# Check pod status
-kubectl get pods -n pi-k3s
-
-# Check service
-kubectl get svc -n pi-k3s
-
-# Check ingress
-kubectl get ingress -n pi-k3s
-
-# View logs
-kubectl logs -n pi-k3s -l app=laravel -f
+sudo k3s kubectl get pods -n pi-k3s
+sudo k3s kubectl get svc -n pi-k3s
+sudo k3s kubectl logs -n pi-k3s -l app=laravel -f
 ```
 
 ## Testing the Deployment
@@ -267,17 +165,17 @@ kubectl logs -n pi-k3s <pod-name>
 ### Cannot Access Application
 
 ```bash
-# Check if pods are running
-kubectl get pods -n pi-k3s
+# Check if pods are running（於 VPS 上）
+sudo k3s kubectl get pods -n pi-k3s
 
 # Check service endpoints
-kubectl get endpoints -n pi-k3s
-
-# Check Traefik ingress controller
-kubectl get pods -n kube-system | grep traefik
+sudo k3s kubectl get endpoints -n pi-k3s
 
 # Check ingress rules
-kubectl describe ingress -n pi-k3s
+sudo k3s kubectl describe ingress -n pi-k3s
+
+# View pod logs
+sudo k3s kubectl logs -n pi-k3s -l app=laravel -f
 ```
 
 ### kubectl TLS Certificate Error (Step 7)
@@ -286,17 +184,17 @@ kubectl describe ingress -n pi-k3s
 
 **Cause**: K3s API server certificate does not include the public IP.
 
-**Fix**: Reinstall K3s with `--tls-san` on the VPS:
+**Fix**: 在 VPS 上重新安裝 K3s（加入 `--tls-san`）：
 
 ```bash
-ssh ubuntu@165.154.227.179
+# 於 VPS 上執行
 sudo /usr/local/bin/k3s-uninstall.sh
 curl -sfL https://get.k3s.io | sh -s - --tls-san 165.154.227.179
 sleep 15
-exit
+sudo systemctl status k3s
 ```
 
-Then re-run `./scripts/deploy-vps.sh` from the start (image will be re-transferred and loaded).
+完成後重新執行 `./scripts/deploy-on-vps.sh` 部署。
 
 ### SSH Connection Issues
 
@@ -314,55 +212,43 @@ cat ~/.ssh/id_rsa.pub | ssh ubuntu@165.154.227.179 \
 
 ## Resource Monitoring
 
-Monitor resource usage to optimize for 1C1G VPS:
+Monitor resource usage on VPS:
 
 ```bash
 # Pod resource usage
-kubectl top pod -n pi-k3s
+sudo k3s kubectl top pod -n pi-k3s
 
 # Node resource usage
-kubectl top node
+sudo k3s kubectl top node
 
 # Detailed pod description
-kubectl describe pod -n pi-k3s <pod-name>
+sudo k3s kubectl describe pod -n pi-k3s <pod-name>
 ```
 
 See `scripts/monitor-resources.sh` for automated monitoring.
 
-## Updating the Application
+## Updating the Application（於 VPS 上）
 
 ### Deploy New Version
 
 ```bash
-# Build new image
-docker build -t pi-k3s:latest .
-
-# Save and transfer
-docker save pi-k3s:latest | gzip > /tmp/pi-k3s-image.tar.gz
-scp /tmp/pi-k3s-image.tar.gz ubuntu@165.154.227.179:/tmp/
-
-# Load on VPS
-ssh ubuntu@165.154.227.179 "sudo k3s ctr images import /tmp/pi-k3s-image.tar.gz && rm /tmp/pi-k3s-image.tar.gz"
-
-# Restart deployment
-kubectl rollout restart deployment/laravel-app -n pi-k3s
-
-# Monitor rollout
-kubectl rollout status deployment/laravel-app -n pi-k3s
+cd ~/pi-k3s
+git pull origin master
+./scripts/deploy-on-vps.sh
 ```
 
 ## Cleanup
 
-### Remove Deployment
+### Remove Deployment（於 VPS 上）
 
 ```bash
-# Delete all resources
-kubectl delete -f k8s/ingress.yaml
-kubectl delete -f k8s/service.yaml
-kubectl delete -f k8s/deployment.yaml
-kubectl delete -f k8s/secrets.yaml
-kubectl delete -f k8s/configmap.yaml
-kubectl delete -f k8s/namespace.yaml
+cd ~/pi-k3s
+sudo k3s kubectl delete -f k8s/ingress.yaml
+sudo k3s kubectl delete -f k8s/service.yaml
+sudo k3s kubectl delete -f k8s/deployment.yaml
+sudo k3s kubectl delete -f k8s/secrets.yaml
+sudo k3s kubectl delete -f k8s/configmap.yaml
+sudo k3s kubectl delete -f k8s/namespace.yaml
 ```
 
 ### Uninstall K3s
@@ -382,23 +268,24 @@ Key environment variables (configured in k8s/configmap.yaml and k8s/secrets.yaml
 - `APP_KEY`: Laravel application key
 - `APP_DEBUG`: Debug mode (false in production)
 
-## Useful Commands
+## Useful Commands（於 VPS 上）
 
 ```bash
-# Set kubeconfig for all terminal sessions
-export KUBECONFIG=~/.kube/config-pi-k3s
-
 # Get all resources in namespace
-kubectl get all -n pi-k3s
+sudo k3s kubectl get all -n pi-k3s
+
+# View pod logs
+sudo k3s kubectl logs -n pi-k3s -l app=laravel -f
 
 # Execute command in pod
-kubectl exec -it -n pi-k3s <pod-name> -- /bin/sh
+sudo k3s kubectl exec -it -n pi-k3s <pod-name> -- /bin/sh
 
-# Port forward for local testing
-kubectl port-forward -n pi-k3s svc/laravel-service 8080:80
+# Describe pod / deployment
+sudo k3s kubectl describe pod -n pi-k3s -l app=laravel
+sudo k3s kubectl describe deployment -n pi-k3s laravel-app
 
-# View resource limits
-kubectl describe deployment -n pi-k3s laravel-app
+# Restart deployment
+sudo k3s kubectl rollout restart deployment/laravel-app -n pi-k3s
 ```
 
 ## Security Considerations

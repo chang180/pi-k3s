@@ -48,18 +48,18 @@ docker compose up
 
 ### VPS 部署（1C1G 優化）
 
-本專案已針對 1 核 1GB RAM 的 VPS 做了全面優化。
+正式環境部署在 VPS 主機上直接執行（登入 SSH 後 clone、建置、部署）。
 
-#### 1. 複製範本並填入正式環境設定
+#### 1. 複製範本並填入正式環境設定（於 VPS 上）
 
 ```bash
-# K8s 環境設定（已從版控移除，需手動建立）
+# K8s 環境設定（已從版控移除，需在 VPS 上手動建立）
 cp k8s/secrets.yaml.example k8s/secrets.yaml       # 填入真正的 APP_KEY
 cp k8s/configmap.yaml.example k8s/configmap.yaml   # 修改 APP_URL 為你的域名
 cp k8s/deployment.yaml.example k8s/deployment.yaml # 啟用 HTTPS 則取消註解
 ```
 
-#### 2. HTTPS 設定（Let's Encrypt）
+#### 2. HTTPS 設定（Let's Encrypt，於 VPS 上）
 
 ```bash
 # 在 VPS 上取得 SSL 憑證
@@ -72,14 +72,15 @@ sudo certbot certonly --standalone -d your-domain.example.com
 
 容器啟動時會自動偵測 `/etc/letsencrypt` 下的憑證，有則啟用 HTTPS + HTTP→HTTPS 跳轉。
 
-#### 3. 部署
+#### 3. 部署（於 VPS 上執行）
 
 ```bash
-# 從本地機器執行（需要 Docker 和 SSH 存取 VPS）
-./scripts/deploy-vps.sh
+# SSH 登入 VPS 後
+git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
+./scripts/deploy-on-vps.sh
 ```
 
-自動化腳本會：建置映像 → 傳輸至 VPS → 安裝輕量 K3s → 匯入映像 → 部署應用。
+腳本會：建置映像 → 匯入 K3s → 套用 manifests。詳見 [DEPLOY-NOW.md](DEPLOY-NOW.md)。
 
 #### 優化細節
 
@@ -116,8 +117,8 @@ sudo certbot certonly --standalone -d your-domain.example.com
 │   ├── service.yaml            # ClusterIP service
 │   └── ingress.yaml            # Traefik ingress（預設停用）
 ├── scripts/
-│   ├── deploy-vps.sh           # VPS 自動部署腳本
-│   └── deploy-on-vps.sh        # 部署入口
+│   ├── deploy-on-vps.sh        # VPS 端部署（正式環境主要入口）
+│   └── deploy-vps.sh           # 本機→VPS 傳輸部署（保留，特殊情境用）
 ├── Dockerfile                  # 多階段建置（SQLite-only）
 └── docker-compose.yml          # 本地開發用（HTTP）
 ```
