@@ -8,6 +8,13 @@ metadata:
     component: web
 spec:
   replicas: 1
+  # hostPort 佔用實體連接埠，新舊 Pod 無法同時存在於同一節點
+  # maxSurge: 0 確保先終止舊 Pod 再啟動新 Pod，避免 FailedScheduling
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: laravel

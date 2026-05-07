@@ -53,7 +53,7 @@ echo "[2/4] 匯入映像到 K3s..."
 docker save pi-k3s:latest | sudo k3s ctr images import -
 
 # Step 3: 套用 manifests
-echo "[3/4] 套用 Kubernetes  manifests..."
+echo "[3/4] 套用 Kubernetes manifests..."
 $KUBECTL apply -f k8s/namespace.yaml
 $KUBECTL apply -f k8s/configmap.yaml
 $KUBECTL apply -f k8s/secrets.yaml
@@ -65,9 +65,12 @@ $KUBECTL apply -f k8s/service.yaml
 $KUBECTL apply -f k8s/ingress.yaml
 $KUBECTL apply -f k8s/hpa.yaml 2>/dev/null || true
 
-# Step 4: 等待並驗證
-echo "[4/4] 等待 Deployment 就緒..."
-$KUBECTL wait --for=condition=available --timeout=180s deployment/laravel-app -n $NAMESPACE 2>/dev/null || true
+# Step 4: 觸發 rollout 並等待就緒
+# 注意：deployment 使用 hostPort，策略已設為 maxSurge=0（先終止舊 Pod 再啟動新 Pod）
+# 故 rollout restart 會有短暫停機，這是 hostPort 單節點部署的正常行為
+echo "[4/4] 觸發 rollout restart 並等待就緒..."
+$KUBECTL rollout restart deployment/laravel-app -n $NAMESPACE
+$KUBECTL rollout status deployment/laravel-app -n $NAMESPACE --timeout=180s
 
 echo ""
 echo "======================================"
