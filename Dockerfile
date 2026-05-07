@@ -57,6 +57,7 @@ RUN apk add --no-cache \
     libzip-dev \
     oniguruma-dev \
     sqlite-dev \
+    $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_sqlite \
@@ -65,6 +66,9 @@ RUN apk add --no-cache \
         bcmath \
         opcache \
         pcntl \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del $PHPIZE_DEPS \
     && rm -rf /var/cache/apk/*
 
 # Install Composer

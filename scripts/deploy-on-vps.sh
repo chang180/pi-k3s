@@ -60,17 +60,25 @@ $KUBECTL apply -f k8s/secrets.yaml
 $KUBECTL apply -f k8s/serviceaccount.yaml
 $KUBECTL apply -f k8s/role.yaml
 $KUBECTL apply -f k8s/rolebinding.yaml
+$KUBECTL apply -f k8s/mariadb-pvc.yaml
+$KUBECTL apply -f k8s/mariadb-service.yaml
+$KUBECTL apply -f k8s/mariadb-deployment.yaml
 $KUBECTL apply -f k8s/deployment.yaml
+$KUBECTL apply -f k8s/worker-deployment.yaml
 $KUBECTL apply -f k8s/service.yaml
 $KUBECTL apply -f k8s/ingress.yaml
 $KUBECTL apply -f k8s/hpa.yaml 2>/dev/null || true
 
 # Step 4: 觸發 rollout 並等待就緒
-# 注意：deployment 使用 hostPort，策略已設為 maxSurge=0（先終止舊 Pod 再啟動新 Pod）
-# 故 rollout restart 會有短暫停機，這是 hostPort 單節點部署的正常行為
+# 注意：web deployment 使用 hostPort，策略已設為 maxSurge=0（先終止舊 Pod 再啟動新 Pod）
+# worker deployment 不對外，作為 K3s 單節點上的可擴展計算層
 echo "[4/4] 觸發 rollout restart 並等待就緒..."
+$KUBECTL rollout restart deployment/mariadb -n $NAMESPACE
 $KUBECTL rollout restart deployment/laravel-app -n $NAMESPACE
+$KUBECTL rollout restart deployment/laravel-worker -n $NAMESPACE
+$KUBECTL rollout status deployment/mariadb -n $NAMESPACE --timeout=180s
 $KUBECTL rollout status deployment/laravel-app -n $NAMESPACE --timeout=180s
+$KUBECTL rollout status deployment/laravel-worker -n $NAMESPACE --timeout=180s
 
 echo ""
 echo "======================================"

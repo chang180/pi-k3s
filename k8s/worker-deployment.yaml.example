@@ -1,47 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: laravel-app
+  name: laravel-worker
   namespace: pi-k3s
   labels:
     app: laravel
-    component: web
+    component: worker
 spec:
   replicas: 1
-  # K3s 單節點下，web 仍使用 hostPort 對外提供服務。
-  # 水平擴展改由 worker deployment 負責，web 保持單副本。
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 0
   selector:
     matchLabels:
       app: laravel
-      component: web
+      component: worker
   template:
     metadata:
       labels:
         app: laravel
-        component: web
+        component: worker
     spec:
-      serviceAccountName: laravel-app
       containers:
-      - name: laravel
+      - name: worker
         image: pi-k3s:latest
         imagePullPolicy: Never
-        ports:
-        - containerPort: 80
-          hostPort: 80
-          name: http
-          protocol: TCP
-        # Uncomment for HTTPS (requires Let's Encrypt certs on host)
-        # - containerPort: 443
-        #   hostPort: 443
-        #   name: https
-        #   protocol: TCP
         env:
-        # Import from ConfigMap
         - name: APP_NAME
           valueFrom:
             configMapKeyRef:
@@ -132,7 +113,6 @@ spec:
             configMapKeyRef:
               name: laravel-config
               key: REDIS_PORT
-        # Import from Secret
         - name: APP_KEY
           valueFrom:
             secretKeyRef:
@@ -155,36 +135,13 @@ spec:
               key: OPENAI_API_KEY
               optional: true
         - name: CONTAINER_ROLE
-          value: "web"
-        # Auto migrate flag
+          value: "worker"
         - name: AUTO_MIGRATE
-          value: "true"
+          value: "false"
         resources:
           requests:
-            memory: "64Mi"
-            cpu: "50m"
+            memory: "96Mi"
+            cpu: "100m"
           limits:
-            memory: "192Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /up
-            port: 80
-          initialDelaySeconds: 60
-          periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 5
-        readinessProbe:
-          httpGet:
-            path: /up
-            port: 80
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 5
-        volumeMounts:
-        - name: storage
-          mountPath: /var/www/html/storage
-      volumes:
-      - name: storage
-        emptyDir: {}
+            memory: "256Mi"
+            cpu: "700m"

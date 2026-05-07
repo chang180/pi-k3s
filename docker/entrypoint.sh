@@ -31,5 +31,10 @@ if [ "$AUTO_MIGRATE" = "true" ]; then
     php artisan migrate --force --no-interaction
 fi
 
-# Execute CMD
+if [ "${CONTAINER_ROLE:-web}" = "worker" ]; then
+    echo "Starting queue worker..."
+    exec php artisan queue:work "${QUEUE_CONNECTION:-database}" --sleep=3 --tries=3 --max-time=3600
+fi
+
+echo "Starting web container..."
 exec "$@"

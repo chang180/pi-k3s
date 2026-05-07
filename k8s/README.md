@@ -58,7 +58,11 @@ kubectl apply -f k8s/secrets.yaml
 kubectl apply -f k8s/serviceaccount.yaml
 kubectl apply -f k8s/role.yaml
 kubectl apply -f k8s/rolebinding.yaml
+kubectl apply -f k8s/mariadb-pvc.yaml
+kubectl apply -f k8s/mariadb-service.yaml
+kubectl apply -f k8s/mariadb-deployment.yaml
 kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/worker-deployment.yaml
 kubectl apply -f k8s/service.yaml
 kubectl apply -f k8s/hpa.yaml
 # Or apply all: kubectl apply -f k8s/
@@ -66,7 +70,7 @@ kubectl apply -f k8s/hpa.yaml
 
 **RBAC**：`serviceaccount.yaml`、`role.yaml`、`rolebinding.yaml` 讓 Laravel Pod 可讀取 Pod 與 HPA 狀態（`GET /api/k8s/status`、`GET /api/k8s/metrics`）。Deployment 使用 `serviceAccountName: laravel-app`。
 
-**HPA**：需啟用 metrics-server（K3s 預設啟用；勿以 `--disable=metrics-server` 安裝）。
+**HPA**：此專案在 K3s 單節點下維持 `web` 單副本，HPA 針對 `laravel-worker` 擴縮。需啟用 metrics-server（K3s 預設啟用；勿以 `--disable=metrics-server` 安裝）。
 
 ```bash
 # Check deployment status
@@ -127,8 +131,9 @@ echo -n 'base64:YOUR_GENERATED_KEY_HERE' | base64
 ### Update ConfigMap
 
 Edit `k8s/configmap.yaml` to update:
-- Database connection settings（1C1G 使用 SQLite）
-- QUEUE_CONNECTION=database（1C1G 無 Redis）
+- `APP_URL`
+- MariaDB connection settings
+- Redis connection settings
 - Other environment variables
 
 ### Update Ingress
@@ -195,8 +200,11 @@ kubectl rollout restart deployment/laravel-app -n pi-k3s
 kubectl rollout status deployment/laravel-app -n pi-k3s
 ```
 
-## Next Steps
+## Runtime Layout
 
-- Phase 4: HPA、分散式計算、K8s API、Laravel database queue 與 Worker
-- HPA (min=1, max=2) 已配置；需啟用 metrics-server
-- QUEUE_CONNECTION=database；Supervisor 內含 queue worker
+- `laravel-app`: web pod，單副本，保留 `hostPort` 對外
+- `laravel-worker`: queue worker deployment，負責分散式計算
+- `mariadb`: 正式環境共享資料庫
+- `redis`: 外部或自行管理的共享 queue / cache / session
+
+本地開發可繼續使用 SQLite；正式環境請參考 [docs/PRODUCTION-ENV.md](../docs/PRODUCTION-ENV.md)。

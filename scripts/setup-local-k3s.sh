@@ -86,7 +86,7 @@ data:
   LOG_LEVEL: "debug"
   DB_CONNECTION: "sqlite"
   DB_DATABASE: "/var/www/html/database/database.sqlite"
-  CACHE_DRIVER: "file"
+  CACHE_STORE: "file"
   SESSION_DRIVER: "file"
   QUEUE_CONNECTION: "database"
   BROADCAST_DRIVER: "log"
@@ -202,11 +202,11 @@ spec:
             configMapKeyRef:
               name: laravel-config
               key: DB_DATABASE
-        - name: CACHE_DRIVER
+        - name: CACHE_STORE
           valueFrom:
             configMapKeyRef:
               name: laravel-config
-              key: CACHE_DRIVER
+              key: CACHE_STORE
         - name: SESSION_DRIVER
           valueFrom:
             configMapKeyRef:

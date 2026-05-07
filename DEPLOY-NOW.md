@@ -38,16 +38,19 @@ cd pi-k3s
 cp k8s/secrets.yaml.example k8s/secrets.yaml
 cp k8s/configmap.yaml.example k8s/configmap.yaml
 cp k8s/deployment.yaml.example k8s/deployment.yaml
+cp k8s/worker-deployment.yaml.example k8s/worker-deployment.yaml
+cp k8s/mariadb-deployment.yaml.example k8s/mariadb-deployment.yaml
+cp k8s/mariadb-pvc.yaml.example k8s/mariadb-pvc.yaml
 
-# 編輯 secrets.yaml：填入 APP_KEY
-# php artisan key:generate --show 取得 key
-# echo -n 'base64:YOUR_KEY' | base64 取得 base64 編碼後填入
+# 編輯 secrets.yaml：填入 APP_KEY、MariaDB、Redis 密碼
 nano k8s/secrets.yaml
 
-# 視需要編輯 configmap.yaml（APP_URL、域名等）
-# 視需要編輯 deployment.yaml（HTTPS、hostPort 等）
+# 編輯 configmap.yaml：正式環境的 MariaDB / Redis host 與 APP_URL
+# deployment.yaml 是 web；worker-deployment.yaml 是背景運算 worker
 nano k8s/configmap.yaml
 nano k8s/deployment.yaml
+nano k8s/worker-deployment.yaml
+nano k8s/mariadb-deployment.yaml
 ```
 
 ### Step 5: 執行部署
@@ -66,7 +69,11 @@ sudo k3s kubectl get pods -n pi-k3s
 # 查看 HPA 狀態（需 metrics-server 啟用）
 sudo k3s kubectl get hpa -n pi-k3s
 
-# 查看日誌
+# 查看 worker 與 MariaDB
+sudo k3s kubectl get deploy -n pi-k3s
+sudo k3s kubectl logs -n pi-k3s -l component=worker -f
+
+# 查看 web 日誌
 sudo k3s kubectl logs -n pi-k3s -l app=laravel -f
 
 # 測試 API
@@ -128,4 +135,5 @@ sudo k3s kubectl rollout restart deployment/laravel-app -n pi-k3s
 ## 完整文件
 
 - [docs/VPS-DEPLOYMENT.md](docs/VPS-DEPLOYMENT.md) — 詳細部署說明
+- [docs/PRODUCTION-ENV.md](docs/PRODUCTION-ENV.md) — 本地 `.env` 與正式 K3s 設定對照
 - [docs/PHASE-3-SUMMARY.md](docs/PHASE-3-SUMMARY.md) — Phase 3 總結

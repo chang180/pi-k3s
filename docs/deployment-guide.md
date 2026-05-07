@@ -66,6 +66,9 @@ cd pi-k3s
 cp k8s/secrets.yaml.example k8s/secrets.yaml
 cp k8s/configmap.yaml.example k8s/configmap.yaml
 cp k8s/deployment.yaml.example k8s/deployment.yaml
+cp k8s/worker-deployment.yaml.example k8s/worker-deployment.yaml
+cp k8s/mariadb-deployment.yaml.example k8s/mariadb-deployment.yaml
+cp k8s/mariadb-pvc.yaml.example k8s/mariadb-pvc.yaml
 ```
 
 ### secrets.yaml
@@ -80,15 +83,19 @@ vi k8s/secrets.yaml
 
 ```bash
 # 修改 APP_URL 為你的域名或 IP
-# APP_URL: "http://<YOUR_VPS_IP>"
+# DB_* 設定為 MariaDB
+# REDIS_* 設定為正式環境 Redis
 vi k8s/configmap.yaml
 ```
 
-### deployment.yaml
+### deployment.yaml / worker-deployment.yaml
 
 ```bash
-# 若需 HTTPS，取消 SSL 相關註解
+# deployment.yaml 是 web pod
+# worker-deployment.yaml 是 queue worker
 vi k8s/deployment.yaml
+vi k8s/worker-deployment.yaml
+vi k8s/mariadb-deployment.yaml
 ```
 
 ## 步驟 5：建置 Docker 映像
@@ -117,14 +124,20 @@ sudo k3s kubectl apply -f k8s/rolebinding.yaml
 sudo k3s kubectl apply -f k8s/configmap.yaml
 sudo k3s kubectl apply -f k8s/secrets.yaml
 
-# 4. 應用（Deployment、Service）
+# 4. 資料層（MariaDB）
+sudo k3s kubectl apply -f k8s/mariadb-pvc.yaml
+sudo k3s kubectl apply -f k8s/mariadb-service.yaml
+sudo k3s kubectl apply -f k8s/mariadb-deployment.yaml
+
+# 5. 應用（Web、Worker、Service）
 sudo k3s kubectl apply -f k8s/deployment.yaml
+sudo k3s kubectl apply -f k8s/worker-deployment.yaml
 sudo k3s kubectl apply -f k8s/service.yaml
 
-# 5. Ingress（若使用 Traefik）
+# 6. Ingress（若使用 Traefik）
 sudo k3s kubectl apply -f k8s/ingress.yaml
 
-# 6. HPA（自動擴展）
+# 7. HPA（worker 自動擴展）
 sudo k3s kubectl apply -f k8s/hpa.yaml
 
 # 等待 Deployment 就緒
@@ -145,7 +158,10 @@ chmod +x scripts/deploy-on-vps.sh
 
 ```bash
 sudo k3s kubectl get pods -n pi-k3s
-# 預期：laravel-app-xxx   1/1   Running
+# 預期至少包含：
+# laravel-app-xxx      1/1   Running
+# laravel-worker-xxx   1/1   Running
+# mariadb-xxx          1/1   Running
 ```
 
 ### 確認 Service
@@ -176,7 +192,7 @@ curl http://<YOUR_VPS_IP>/api/history
 
 ```bash
 sudo k3s kubectl get hpa -n pi-k3s
-# 預期：laravel-app   Deployment/laravel-app   <cpu>%/60%   1   2
+# 預期：laravel-app   Deployment/laravel-worker   <cpu>%/60%   1   2
 ```
 
 ## 步驟 8：HTTPS 設定（可選）
@@ -334,13 +350,16 @@ K3s 的 metrics-server 本身會吃 50-80m CPU。1 vCPU 環境下：
   sudo k3s kubectl scale deployment/laravel-app --replicas=1 -n pi-k3s
   ```
 
-### SQLite 鎖定錯誤
+### 多 Pod 分散式計算
 
-分散式模式下若多 Pod 同時寫入，可能出現 `database is locked`：
+正式環境請使用：
 
-- 確認 [k8s/deployment.yaml](../k8s/deployment.yaml.example) 的 `volumeMounts` 中 `storage` 是用 `emptyDir`（單 Pod 內）— 跨 Pod 共享 SQLite 並不適合
-- 1C1G 環境建議 HPA `maxReplicas: 1`，分散式效益不大
-- 真正想做多 Pod 分散，請改用 PostgreSQL 或 MySQL
+- `laravel-app`：固定 1 replica，保留 hostPort 對外
+- `laravel-worker`：可擴縮
+- MariaDB：共享 `calculations`、`calculation_chunks`、`jobs` 等資料
+- Redis：共享 queue / cache / session / lock
+
+不要在正式環境用 SQLite 來承接多個 worker pod。
 
 ### SSE 連線中斷
 
@@ -354,16 +373,16 @@ K3s 的 metrics-server 本身會吃 50-80m CPU。1 vCPU 環境下：
 
 部署完成後，逐項確認：
 
-- [ ] `kubectl get pods -n pi-k3s` — Pod `Running` 且 `1/1` 就緒
+- [ ] `kubectl get pods -n pi-k3s` — web / worker / mariadb 都是 `Running`
 - [ ] `kubectl get hpa -n pi-k3s` — `TARGETS` 顯示具體 CPU%（不是 `<unknown>`）
 - [ ] `kubectl get svc -n pi-k3s` — Service 端點正確
 - [ ] `curl -k https://<host>/up` — 回 `200`
 - [ ] `curl -k -X POST https://<host>/api/calculate -d '{"total_points":100000,"mode":"single"}' -H 'Content-Type: application/json'` — 回 `201` 並含 `result_pi`
 - [ ] 瀏覽器訪問 `https://<host>/calculate`，跑一次完整計算（single + distributed），AI Chat（如果 OPENAI_API_KEY 已設）能正常對話
-- [ ] `kubectl top pod -n pi-k3s` — 單 Pod 記憶體 < 200Mi、CPU 閒置 < 50m
+- [ ] `kubectl top pod -n pi-k3s` — web / worker / mariadb 資源都在預期內
 - [ ] `swapon --show` — Swap 1GB 已啟用
 - [ ] HTTPS 憑證（如有）：`curl -I https://<host>/` 顯示有效憑證
-- [ ] HPA 壓力測試：發 1000 次 `100k single` 計算，確認 HPA 從 1 副本擴到 2 副本
+- [ ] HPA 壓力測試：連續發 distributed 計算，確認 worker 副本數能從 1 擴到 2
 
 ## 清除部署
 
