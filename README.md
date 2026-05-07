@@ -10,7 +10,7 @@
 
 ## 技術棧
 
-- **後端**：Laravel 12、PHP 8.4+、SQLite（輕量部署）
+- **後端**：Laravel 13、PHP 8.4+、SQLite（輕量部署）
 - **前端**：Vue 3、Inertia v2、Vite、Tailwind CSS v4、Chart.js、Canvas
 - **部署**：Docker、K3s（輕量模式）、Let's Encrypt HTTPS（1C1G VPS 友善）
 
@@ -21,17 +21,19 @@
 composer install
 cp .env.example .env
 php artisan key:generate
+touch database/database.sqlite
 php artisan migrate
 
 npm install
+npm run build   # 或 npm run dev 啟用熱更新
 
-# 啟動
+# 啟動（不用 Herd 時）
 php artisan serve --host=0.0.0.0 --port=8000
-# 另一終端
-npm run dev
 ```
 
-瀏覽 http://localhost:8000
+> **使用 Laravel Herd 的開發者**：把專案放在 Herd 的 parking 目錄即可，無需啟動 `php artisan serve`，預設網址為 `https://pi-k3s.test`。記得 `.env` 的 `APP_URL` 對齊（`https://pi-k3s.test`）。
+
+瀏覽 http://localhost:8000（或 Herd：https://pi-k3s.test）
 
 - **計算頁面**：http://localhost:8000/calculate — 儀表板可選點數（10 萬 / 100 萬 / 1000 萬）、模式（single / distributed），開始/停止/重置；蒙地卡羅 Canvas、圓周率收斂圖、K8s 狀態、效能對比圖表；分散式模式以 SSE 即時顯示進度。
 - **API**：`POST/GET /api/calculate`、`GET /api/calculate/{id}/stream`（SSE）、`GET /api/history`、`GET /api/k8s/status`、`GET /api/k8s/metrics`、`POST /api/ai/ask`（AI SSE）
@@ -207,6 +209,8 @@ K8s 部署時，將 key 加入 `k8s/secrets.yaml`。若未設定 key，AI 功能
 | Phase 4：HPA 與分散式計算 | 已完成 |
 | Phase 5：前端視覺化與 SSE | 已完成 |
 | Phase 6：測試、文件與展示 | 已完成 |
+| 後續：Laravel 13 升級 | 已完成 |
+| 後續：UI 中文化、首頁與展示頁重整 | 進行中 |
 
 ## 專案計畫與分階段開發
 
