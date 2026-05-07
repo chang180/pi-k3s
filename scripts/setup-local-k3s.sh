@@ -1,142 +1,197 @@
 #!/bin/bash
 #
-# 本機 K3s + Ingress 設定，透過 http://pi-k3s.local 存取
-#
-# 前置需求：
-#   - Docker 已安裝且運行中
-#   - k3d 已安裝（若無，腳本會提示安裝方式）
-#   - kubectl 已安裝（k3d 通常會一併安裝）
-#
-# 使用方式：
-#   ./scripts/setup-local-k3s.sh
-#
-# 完成後：瀏覽 http://pi-k3s.local（需先設定 /etc/hosts 見下方說明）
+# 本機 K3s 驗證流程（k3d）
+# - web: 1 replica
+# - worker: 2 replicas
+# - mariadb + redis
+# - ingress 透過 http://localhost:8081 對外
 #
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 K8S_DIR="$PROJECT_ROOT/k8s"
-CLUSTER_NAME="pi-k3s"
-NAMESPACE="pi-k3s"
+GENERATED_DIR="$K8S_DIR/.generated-local"
+CLUSTER_NAME="pi-k3s-local"
+NAMESPACE="pi-k3s-local"
+APP_URL="http://localhost:8081"
+K3D_BIN="${K3D_BIN:-k3d}"
 
 echo "======================================"
-echo "Pi-K3s 本機 K3s + Ingress 設定"
+echo "Pi-K3s 本機 K3s 驗證"
 echo "======================================"
 echo "專案目錄: $PROJECT_ROOT"
+echo "Cluster:   $CLUSTER_NAME"
+echo "URL:       $APP_URL"
 echo ""
 
 cd "$PROJECT_ROOT"
 
-# 檢查 k3d
-if ! command -v k3d >/dev/null 2>&1; then
-    echo "錯誤: 未找到 k3d。請先安裝："
-    echo "  curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash"
-    echo "  或參考 https://k3d.io/"
+if ! command -v "$K3D_BIN" >/dev/null 2>&1; then
+    echo "錯誤: 未找到 k3d。"
+    echo "Windows 可安裝: winget install --id k3d.k3d"
     exit 1
 fi
 
-# 檢查 kubectl
 if ! command -v kubectl >/dev/null 2>&1; then
-    echo "錯誤: 未找到 kubectl。安裝 k3d 後通常會包含，或請手動安裝 kubectl。"
+    echo "錯誤: 未找到 kubectl。"
     exit 1
 fi
 
-# 檢查 Docker
 if ! docker info >/dev/null 2>&1; then
-    echo "錯誤: Docker 未運行。請先啟動 Docker。"
+    echo "錯誤: Docker 未運行。"
     exit 1
 fi
 
-# 若 cluster 已存在則刪除（可選：--recreate 時使用）
-if k3d cluster list 2>/dev/null | grep -q "^$CLUSTER_NAME "; then
-    echo "[1/7] 刪除既有 cluster: $CLUSTER_NAME"
-    k3d cluster delete "$CLUSTER_NAME"
+mkdir -p "$GENERATED_DIR"
+
+APP_KEY=""
+if [ -f .env ]; then
+    APP_KEY=$(grep '^APP_KEY=' .env | cut -d= -f2- | tr -d '"' | tr -d "'" || true)
 fi
 
-# 建立 k3d cluster（port 80 對應 Traefik LoadBalancer）
-echo "[1/7] 建立 k3d cluster: $CLUSTER_NAME (port 80 -> Traefik)"
-k3d cluster create "$CLUSTER_NAME" \
-    -p "80:80@loadbalancer" \
-    --agents 1
+if [ -z "$APP_KEY" ]; then
+    APP_KEY="base64:PLEASE_GENERATE_KEY"
+fi
 
-# 建置 Docker 映像
-echo "[2/7] 建置 Docker 映像..."
-docker build -t pi-k3s:latest .
+cat > "$GENERATED_DIR/00-namespace.yaml" <<YAML
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: $NAMESPACE
+YAML
 
-# 匯入映像到 k3d
-echo "[3/7] 匯入映像到 k3d cluster..."
-k3d image import pi-k3s:latest -c "$CLUSTER_NAME"
-
-# 生成 ConfigMap（本機用）
-echo "[4/7] 生成 ConfigMap、Secrets、Deployment..."
-cat > "$K8S_DIR/configmap.yaml" << 'CONFIGMAP'
+cat > "$GENERATED_DIR/10-configmap.yaml" <<YAML
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: laravel-config
-  namespace: pi-k3s
+  namespace: $NAMESPACE
 data:
   APP_NAME: "Pi Calculator"
   APP_ENV: "local"
   APP_DEBUG: "true"
-  APP_URL: "http://pi-k3s.local"
+  APP_URL: "$APP_URL"
   LOG_CHANNEL: "stderr"
   LOG_LEVEL: "debug"
-  DB_CONNECTION: "sqlite"
-  DB_DATABASE: "/var/www/html/database/database.sqlite"
-  CACHE_STORE: "file"
-  SESSION_DRIVER: "file"
-  QUEUE_CONNECTION: "database"
+  DB_CONNECTION: "mysql"
+  DB_HOST: "mariadb"
+  DB_PORT: "3306"
+  DB_DATABASE: "pi_k3s"
+  DB_USERNAME: "pi_k3s"
+  CACHE_STORE: "redis"
+  SESSION_DRIVER: "redis"
+  QUEUE_CONNECTION: "redis"
+  REDIS_CLIENT: "phpredis"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
   BROADCAST_DRIVER: "log"
-CONFIGMAP
+YAML
 
-# 從 .env 讀取 APP_KEY 並 base64 編碼
-if [ -f .env ]; then
-    APP_KEY=$(grep '^APP_KEY=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
-    if [ -n "$APP_KEY" ]; then
-        APP_KEY_B64=$(echo -n "$APP_KEY" | base64 -w 0 2>/dev/null || echo -n "$APP_KEY" | base64)
-    else
-        echo "警告: .env 中未找到 APP_KEY，將使用預設值"
-        APP_KEY_B64=$(echo -n "base64:PLEASE_GENERATE_KEY" | base64 -w 0 2>/dev/null || echo -n "base64:PLEASE_GENERATE_KEY" | base64)
-    fi
-else
-    echo "警告: 未找到 .env，將使用預設 APP_KEY"
-    APP_KEY_B64=$(echo -n "base64:PLEASE_GENERATE_KEY" | base64 -w 0 2>/dev/null || echo -n "base64:PLEASE_GENERATE_KEY" | base64)
-fi
-
-# 從 .env 讀取 OPENAI_API_KEY（可選，供 AI 助手使用）
-OPENAI_API_KEY=""
-OPENAI_API_KEY_B64=""
-if [ -f .env ]; then
-    OPENAI_API_KEY=$(grep '^OPENAI_API_KEY=' .env 2>/dev/null | cut -d= -f2- | tr -d '"' | tr -d "'" | head -c 500)
-    if [ -n "$OPENAI_API_KEY" ]; then
-        OPENAI_API_KEY_B64=$(echo -n "$OPENAI_API_KEY" | base64 -w 0 2>/dev/null || echo -n "$OPENAI_API_KEY" | base64)
-        echo "已從 .env 讀取 OPENAI_API_KEY 並寫入 Secret"
-    fi
-fi
-
-cat > "$K8S_DIR/secrets.yaml" << SECRETS
+cat > "$GENERATED_DIR/11-secrets.yaml" <<YAML
 apiVersion: v1
 kind: Secret
 metadata:
   name: laravel-secrets
-  namespace: pi-k3s
+  namespace: $NAMESPACE
 type: Opaque
-data:
-  APP_KEY: $APP_KEY_B64
-  DB_PASSWORD: ""
-  OPENAI_API_KEY: ${OPENAI_API_KEY_B64:-\"\"}
-SECRETS
+stringData:
+  APP_KEY: "$APP_KEY"
+  DB_PASSWORD: "pi_k3s_local"
+  REDIS_PASSWORD: ""
+YAML
 
-# 本機 Deployment（無 hostPort，由 Ingress/Traefik 處理 port 80）
-cat > "$K8S_DIR/deployment.yaml" << 'DEPLOYMENT'
+cat > "$GENERATED_DIR/20-mariadb.yaml" <<YAML
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: $NAMESPACE
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:11.4
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          value: root_local
+        - name: MARIADB_DATABASE
+          value: pi_k3s
+        - name: MARIADB_USER
+          value: pi_k3s
+        - name: MARIADB_PASSWORD
+          value: pi_k3s_local
+        ports:
+        - containerPort: 3306
+        readinessProbe:
+          exec:
+            command: ["/usr/local/bin/healthcheck.sh", "--connect", "--innodb_initialized"]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: $NAMESPACE
+spec:
+  selector:
+    app: mariadb
+  ports:
+  - port: 3306
+    targetPort: 3306
+YAML
+
+cat > "$GENERATED_DIR/21-redis.yaml" <<YAML
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: $NAMESPACE
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: $NAMESPACE
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+YAML
+
+cat > "$GENERATED_DIR/30-web.yaml" <<YAML
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: laravel-app
-  namespace: pi-k3s
+  namespace: $NAMESPACE
   labels:
     app: laravel
     component: web
@@ -154,74 +209,15 @@ spec:
     spec:
       serviceAccountName: laravel-app
       containers:
-      - name: laravel
+      - name: app
         image: pi-k3s:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 80
-          name: http
-          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: laravel-config
         env:
-        - name: APP_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: APP_NAME
-        - name: APP_ENV
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: APP_ENV
-        - name: APP_DEBUG
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: APP_DEBUG
-        - name: APP_URL
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: APP_URL
-        - name: LOG_CHANNEL
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: LOG_CHANNEL
-        - name: LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: LOG_LEVEL
-        - name: DB_CONNECTION
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: DB_CONNECTION
-        - name: DB_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: DB_DATABASE
-        - name: CACHE_STORE
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: CACHE_STORE
-        - name: SESSION_DRIVER
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: SESSION_DRIVER
-        - name: QUEUE_CONNECTION
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: QUEUE_CONNECTION
-        - name: BROADCAST_DRIVER
-          valueFrom:
-            configMapKeyRef:
-              name: laravel-config
-              key: BROADCAST_DRIVER
         - name: APP_KEY
           valueFrom:
             secretKeyRef:
@@ -232,81 +228,166 @@ spec:
             secretKeyRef:
               name: laravel-secrets
               key: DB_PASSWORD
-        - name: OPENAI_API_KEY
+        - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
               name: laravel-secrets
-              key: OPENAI_API_KEY
+              key: REDIS_PASSWORD
         - name: AUTO_MIGRATE
           value: "true"
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "192Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /up
-            port: 80
-          initialDelaySeconds: 60
-          periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 5
         readinessProbe:
           httpGet:
             path: /up
             port: 80
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 5
-        volumeMounts:
-        - name: storage
-          mountPath: /var/www/html/storage
-      volumes:
-      - name: storage
-        emptyDir: {}
-DEPLOYMENT
+          initialDelaySeconds: 20
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel-service
+  namespace: $NAMESPACE
+spec:
+  selector:
+    app: laravel
+    component: web
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: laravel-ingress
+  namespace: $NAMESPACE
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: laravel-service
+            port:
+              number: 80
+YAML
 
-# 套用 manifests
-echo "[5/7] 套用 Kubernetes manifests..."
-kubectl apply -f "$K8S_DIR/namespace.yaml"
-kubectl apply -f "$K8S_DIR/ingressclass.yaml" 2>/dev/null || true
-kubectl apply -f "$K8S_DIR/configmap.yaml"
-kubectl apply -f "$K8S_DIR/secrets.yaml"
-kubectl apply -f "$K8S_DIR/serviceaccount.yaml"
-kubectl apply -f "$K8S_DIR/role.yaml"
-kubectl apply -f "$K8S_DIR/rolebinding.yaml"
-kubectl apply -f "$K8S_DIR/deployment.yaml"
-kubectl apply -f "$K8S_DIR/service.yaml"
-kubectl apply -f "$K8S_DIR/ingress.yaml"
-kubectl apply -f "$K8S_DIR/hpa.yaml" 2>/dev/null || true
+cat > "$GENERATED_DIR/31-worker.yaml" <<YAML
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-worker
+  namespace: $NAMESPACE
+  labels:
+    app: laravel
+    component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: laravel
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: laravel
+        component: worker
+    spec:
+      containers:
+      - name: worker
+        image: pi-k3s:latest
+        imagePullPolicy: Never
+        envFrom:
+        - configMapRef:
+            name: laravel-config
+        env:
+        - name: APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: APP_KEY
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: DB_PASSWORD
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: REDIS_PASSWORD
+        - name: AUTO_MIGRATE
+          value: "false"
+        - name: CONTAINER_ROLE
+          value: "worker"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "96Mi"
+          limits:
+            cpu: "700m"
+            memory: "256Mi"
+YAML
 
-# 等待 Deployment 就緒
-echo "[6/7] 等待 Deployment 就緒..."
-kubectl wait --for=condition=available --timeout=180s deployment/laravel-app -n "$NAMESPACE" 2>/dev/null || true
+cat > "$GENERATED_DIR/32-hpa.yaml" <<YAML
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: laravel-worker
+  namespace: $NAMESPACE
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: laravel-worker
+  minReplicas: 1
+  maxReplicas: 2
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+YAML
 
-echo "[7/7] 驗證..."
-kubectl get pods -n "$NAMESPACE"
-kubectl get ingress -n "$NAMESPACE"
+if "$K3D_BIN" cluster list 2>/dev/null | grep -q "^$CLUSTER_NAME "; then
+    echo "[1/6] 刪除既有 cluster: $CLUSTER_NAME"
+    "$K3D_BIN" cluster delete "$CLUSTER_NAME"
+fi
+
+echo "[1/6] 建立 k3d cluster"
+"$K3D_BIN" cluster create "$CLUSTER_NAME" -p "8081:80@loadbalancer" --agents 1
+
+echo "[2/6] 建置 Docker image"
+docker build -t pi-k3s:latest .
+
+echo "[3/6] 匯入 image 到 k3d"
+"$K3D_BIN" image import pi-k3s:latest -c "$CLUSTER_NAME"
+
+echo "[4/6] 套用 local manifests"
+kubectl apply -f "$GENERATED_DIR"
+
+echo "[5/6] 等待部署就緒"
+kubectl wait --for=condition=available --timeout=240s deployment/mariadb -n "$NAMESPACE"
+kubectl wait --for=condition=available --timeout=240s deployment/redis -n "$NAMESPACE"
+kubectl wait --for=condition=available --timeout=240s deployment/laravel-app -n "$NAMESPACE"
+kubectl wait --for=condition=available --timeout=240s deployment/laravel-worker -n "$NAMESPACE"
+
+echo "[6/6] 狀態摘要"
+kubectl get deployment,hpa -n "$NAMESPACE"
+kubectl get pods -n "$NAMESPACE" -o wide
 
 echo ""
 echo "======================================"
-echo "✓ 本機 K3s 設定完成"
+echo "✓ 本機 K3s 驗證環境完成"
 echo "======================================"
+echo "URL: $APP_URL"
 echo ""
-echo "請確認 /etc/hosts 已加入："
-echo "  127.0.0.1 pi-k3s.local"
-echo ""
-echo "然後瀏覽： http://pi-k3s.local"
-echo ""
-echo "除錯指令："
-echo "  kubectl logs -n $NAMESPACE -l app=laravel -f"
-echo "  kubectl describe pod -n $NAMESPACE -l app=laravel"
-echo ""
-echo "若無法存取，可先用 port-forward 測試："
-echo "  kubectl port-forward -n $NAMESPACE svc/laravel-service 8080:80"
-echo "  然後訪問 http://localhost:8080"
+echo "HPA 壓力測試（Windows PowerShell）:"
+echo "  ./scripts/test-local-k3s-hpa.ps1"
 echo ""
