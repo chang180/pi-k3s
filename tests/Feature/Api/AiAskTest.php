@@ -5,11 +5,17 @@ use App\Ai\Agents\PiK3sExplainer;
 test('ai ask returns streamed response', function () {
     PiK3sExplainer::fake(['這是蒙地卡羅法的說明。']);
 
-    $response = $this->postJson('/api/ai/ask', [
+    $response = $this->post('/api/ai/ask', [
         'message' => '什麼是蒙地卡羅法？',
+    ], [
+        'Accept' => 'text/event-stream',
     ]);
 
     $response->assertSuccessful();
+    expect($response->headers->get('content-type'))->toContain('text/event-stream');
+    expect($response->streamedContent())->toContain('"type":"text_delta"')
+        ->toContain(json_encode('這是蒙地卡羅法的說明。'))
+        ->toContain('data: [DONE]');
 
     PiK3sExplainer::assertPrompted(fn ($prompt) => $prompt->contains('蒙地卡羅'));
 });

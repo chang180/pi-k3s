@@ -12,6 +12,46 @@ const suggestions = [
     'Single 和 Distributed 模式有什麼差別？',
 ];
 
+type StreamPayload = {
+    delta?: string;
+    type?: string;
+};
+
+function extractStreamText(eventPayload: string): string {
+    if (eventPayload === '[DONE]' || eventPayload === '</stream>') {
+        return '';
+    }
+
+    try {
+        const parsed = JSON.parse(eventPayload) as StreamPayload;
+
+        if (parsed.type === 'text_delta' && typeof parsed.delta === 'string') {
+            return parsed.delta;
+        }
+
+        return '';
+    } catch {
+        return eventPayload;
+    }
+}
+
+function parseSseBuffer(buffer: string): { events: string[]; remainder: string } {
+    const normalized = buffer.replace(/\r\n/g, '\n');
+    const segments = normalized.split('\n\n');
+    const remainder = normalized.endsWith('\n\n') ? '' : (segments.pop() ?? '');
+    const events = segments
+        .map((segment) =>
+            segment
+                .split('\n')
+                .filter((line) => line.startsWith('data:'))
+                .map((line) => line.slice(5).trimStart())
+                .join('\n'),
+        )
+        .filter((eventPayload) => eventPayload !== '');
+
+    return { events, remainder };
+}
+
 async function sendMessage(text?: string): Promise<void> {
     const message = text ?? input.value.trim();
     if (!message || isLoading.value) {
@@ -46,6 +86,7 @@ async function sendMessage(text?: string): Promise<void> {
 
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
+        let buffer = '';
 
         if (!reader) {
             messages.value[messages.value.length - 1].content = '串流不可用';
@@ -59,33 +100,36 @@ async function sendMessage(text?: string): Promise<void> {
                 break;
             }
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
 
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const data = line.slice(6);
-                    if (data === '</stream>') {
-                        continue;
-                    }
-                    let toAppend: string;
-                    try {
-                        const parsed = JSON.parse(data) as { type?: string; delta?: string };
-                        if (parsed && typeof parsed.delta === 'string') {
-                            toAppend = parsed.delta;
-                        } else if (parsed && typeof parsed === 'object') {
-                            toAppend = '';
-                        } else {
-                            toAppend = data === '[DONE]' ? '' : data;
-                        }
-                    } catch {
-                        toAppend = data === '[DONE]' ? '' : data;
-                    }
-                    messages.value[messages.value.length - 1].content += toAppend;
-                    await nextTick();
-                    scrollToBottom();
+            const { events, remainder } = parseSseBuffer(buffer);
+            buffer = remainder;
+
+            for (const eventPayload of events) {
+                const toAppend = extractStreamText(eventPayload);
+
+                if (toAppend === '') {
+                    continue;
                 }
+
+                messages.value[messages.value.length - 1].content += toAppend;
+                await nextTick();
+                scrollToBottom();
             }
+        }
+
+        buffer += decoder.decode();
+
+        const { events } = parseSseBuffer(buffer + '\n\n');
+
+        for (const eventPayload of events) {
+            const toAppend = extractStreamText(eventPayload);
+
+            if (toAppend === '') {
+                continue;
+            }
+
+            messages.value[messages.value.length - 1].content += toAppend;
         }
     } catch (e) {
         messages.value[messages.value.length - 1].content =
