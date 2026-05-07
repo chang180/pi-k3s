@@ -21,10 +21,10 @@ defineProps<{
 
 <template>
     <AuthBase
-        title="Log in to your account"
-        description="Enter your email and password below to log in"
+        title="登入您的帳號"
+        description="輸入您的電子郵件與密碼以登入"
     >
-        <Head title="Log in" />
+        <Head title="登入" />
 
         <div
             v-if="status"
@@ -41,7 +41,7 @@ defineProps<{
         >
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
+                    <Label for="email">電子郵件</Label>
                     <Input
                         id="email"
                         type="email"
@@ -57,14 +57,14 @@ defineProps<{
 
                 <div class="grid gap-2">
                     <div class="flex items-center justify-between">
-                        <Label for="password">Password</Label>
+                        <Label for="password">密碼</Label>
                         <TextLink
                             v-if="canResetPassword"
                             :href="request()"
                             class="text-sm"
                             :tabindex="5"
                         >
-                            Forgot password?
+                            忘記密碼？
                         </TextLink>
                     </div>
                     <Input
@@ -74,7 +74,7 @@ defineProps<{
                         required
                         :tabindex="2"
                         autocomplete="current-password"
-                        placeholder="Password"
+                        placeholder="密碼"
                     />
                     <InputError :message="errors.password" />
                 </div>
@@ -82,7 +82,7 @@ defineProps<{
                 <div class="flex items-center justify-between">
                     <Label for="remember" class="flex items-center space-x-3">
                         <Checkbox id="remember" name="remember" :tabindex="3" />
-                        <span>Remember me</span>
+                        <span>記住我</span>
                     </Label>
                 </div>
 
@@ -94,7 +94,7 @@ defineProps<{
                     data-test="login-button"
                 >
                     <Spinner v-if="processing" />
-                    Log in
+                    登入
                 </Button>
             </div>
 
@@ -102,8 +102,8 @@ defineProps<{
                 class="text-center text-sm text-muted-foreground"
                 v-if="canRegister"
             >
-                Don't have an account?
-                <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
+                還沒有帳號？
+                <TextLink :href="register()" :tabindex="5">註冊</TextLink>
             </div>
         </Form>
     </AuthBase>

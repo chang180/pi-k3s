@@ -7,14 +7,14 @@ import { dashboard } from '@/routes';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
+        title: '儀表板',
         href: dashboard().url,
     },
 ];
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="儀表板" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div

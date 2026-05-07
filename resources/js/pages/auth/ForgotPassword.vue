@@ -17,10 +17,10 @@ defineProps<{
 
 <template>
     <AuthLayout
-        title="Forgot password"
-        description="Enter your email to receive a password reset link"
+        title="忘記密碼"
+        description="輸入您的電子郵件以接收密碼重設連結"
     >
-        <Head title="Forgot password" />
+        <Head title="忘記密碼" />
 
         <div
             v-if="status"
@@ -32,7 +32,7 @@ defineProps<{
         <div class="space-y-6">
             <Form v-bind="email.form()" v-slot="{ errors, processing }">
                 <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
+                    <Label for="email">電子郵件</Label>
                     <Input
                         id="email"
                         type="email"
@@ -51,14 +51,14 @@ defineProps<{
                         data-test="email-password-reset-link-button"
                     >
                         <Spinner v-if="processing" />
-                        Email password reset link
+                        寄送密碼重設連結
                     </Button>
                 </div>
             </Form>
 
             <div class="space-x-1 text-center text-sm text-muted-foreground">
-                <span>Or, return to</span>
-                <TextLink :href="login()">log in</TextLink>
+                <span>或返回</span>
+                <TextLink :href="login()">登入</TextLink>
             </div>
         </div>
     </AuthLayout>

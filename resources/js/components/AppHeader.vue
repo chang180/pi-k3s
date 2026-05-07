@@ -55,7 +55,7 @@ const activeItemStyles =
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: '儀表板',
         href: dashboard(),
         icon: LayoutGrid,
     },
@@ -63,13 +63,13 @@ const mainNavItems: NavItem[] = [
 
 const rightNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
+        title: 'GitHub',
+        href: 'https://github.com/chang180/pi-k3s',
         icon: Folder,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
+        title: '文件',
+        href: 'https://github.com/chang180/pi-k3s/blob/master/README.md',
         icon: BookOpen,
     },
 ];
@@ -93,7 +93,7 @@ const rightNavItems: NavItem[] = [
                         </SheetTrigger>
                         <SheetContent side="left" class="w-[300px] p-6">
                             <SheetTitle class="sr-only"
-                                >Navigation Menu</SheetTitle
+                                >導覽選單</SheetTitle
                             >
                             <SheetHeader class="flex justify-start text-left">
                                 <AppLogoIcon

@@ -13,10 +13,10 @@ import { store } from '@/routes/register';
 
 <template>
     <AuthBase
-        title="Create an account"
-        description="Enter your details below to create your account"
+        title="建立帳號"
+        description="請填寫以下資訊建立您的帳號"
     >
-        <Head title="Register" />
+        <Head title="註冊" />
 
         <Form
             v-bind="store.form()"
@@ -26,7 +26,7 @@ import { store } from '@/routes/register';
         >
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="name">Name</Label>
+                    <Label for="name">姓名</Label>
                     <Input
                         id="name"
                         type="text"
@@ -35,13 +35,13 @@ import { store } from '@/routes/register';
                         :tabindex="1"
                         autocomplete="name"
                         name="name"
-                        placeholder="Full name"
+                        placeholder="完整姓名"
                     />
                     <InputError :message="errors.name" />
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
+                    <Label for="email">電子郵件</Label>
                     <Input
                         id="email"
                         type="email"
@@ -55,7 +55,7 @@ import { store } from '@/routes/register';
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password">Password</Label>
+                    <Label for="password">密碼</Label>
                     <Input
                         id="password"
                         type="password"
@@ -63,13 +63,13 @@ import { store } from '@/routes/register';
                         :tabindex="3"
                         autocomplete="new-password"
                         name="password"
-                        placeholder="Password"
+                        placeholder="密碼"
                     />
                     <InputError :message="errors.password" />
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password_confirmation">Confirm password</Label>
+                    <Label for="password_confirmation">確認密碼</Label>
                     <Input
                         id="password_confirmation"
                         type="password"
@@ -77,7 +77,7 @@ import { store } from '@/routes/register';
                         :tabindex="4"
                         autocomplete="new-password"
                         name="password_confirmation"
-                        placeholder="Confirm password"
+                        placeholder="再次輸入密碼"
                     />
                     <InputError :message="errors.password_confirmation" />
                 </div>
@@ -90,17 +90,17 @@ import { store } from '@/routes/register';
                     data-test="register-user-button"
                 >
                     <Spinner v-if="processing" />
-                    Create account
+                    建立帳號
                 </Button>
             </div>
 
             <div class="text-center text-sm text-muted-foreground">
-                Already have an account?
+                已經有帳號了？
                 <TextLink
                     :href="login()"
                     class="underline underline-offset-4"
                     :tabindex="6"
-                    >Log in</TextLink
+                    >登入</TextLink
                 >
             </div>
         </Form>

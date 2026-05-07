@@ -43,7 +43,7 @@ const chartData = computed(() => {
         }),
         datasets: [
             {
-                label: 'Duration (ms)',
+                label: '耗時 (ms)',
                 data: recent.map((e) => e.duration_ms),
                 backgroundColor: recent.map((e) =>
                     e.mode === 'single' ? 'rgba(99, 102, 241, 0.7)' : 'rgba(52, 211, 153, 0.7)',
@@ -82,18 +82,18 @@ const chartOptions = {
 <template>
     <div class="rounded-xl border border-sidebar-border/70 bg-card p-5 dark:border-sidebar-border">
         <div class="mb-3 flex items-center justify-between">
-            <h3 class="text-lg font-semibold">Performance Comparison</h3>
+            <h3 class="text-lg font-semibold">效能比較</h3>
             <button
                 type="button"
                 class="rounded-lg border border-input bg-background px-3 py-1 text-xs transition-colors hover:bg-muted"
                 @click="refresh"
             >
-                Refresh
+                重新整理
             </button>
         </div>
 
         <div v-if="history.length === 0" class="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            No completed calculations yet
+            尚無已完成的計算紀錄
         </div>
         <div v-else class="h-64">
             <Bar :data="chartData" :options="chartOptions" />
@@ -102,11 +102,11 @@ const chartOptions = {
         <div class="mt-3 flex gap-4 text-xs text-muted-foreground">
             <span>
                 <span class="mr-1 inline-block h-2 w-2 rounded-full bg-indigo-500" />
-                Single
+                單機
             </span>
             <span>
                 <span class="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" />
-                Distributed
+                分散式
             </span>
         </div>
     </div>

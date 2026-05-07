@@ -19,12 +19,12 @@ import { calculate, dashboard } from '@/routes';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: '儀表板',
         href: dashboard(),
         icon: LayoutGrid,
     },
     {
-        title: 'Calculate Pi',
+        title: '計算 π',
         href: calculate(),
         icon: Calculator,
     },
@@ -32,13 +32,13 @@ const mainNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
+        title: 'GitHub',
+        href: 'https://github.com/chang180/pi-k3s',
         icon: Folder,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
+        title: '文件',
+        href: 'https://github.com/chang180/pi-k3s/blob/master/README.md',
         icon: BookOpen,
     },
 ];

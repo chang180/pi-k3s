@@ -12,7 +12,7 @@ import { useCalculationStream } from '@/composables/useCalculationStream';
 import type { BreadcrumbItem, CalculationResult } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Calculate Pi', href: '/calculate' },
+    { title: '計算 π', href: '/calculate' },
 ];
 
 const selectedPoints = ref<number>(100000);
@@ -85,7 +85,7 @@ async function handleStart(): Promise<void> {
                     .flat()
                     .join(', ');
             } else {
-                error.value = data.message || 'An error occurred';
+                error.value = data.message || '發生錯誤';
             }
             calculating.value = false;
             return;
@@ -100,7 +100,7 @@ async function handleStart(): Promise<void> {
             performanceRef.value?.refresh();
         }
     } catch (e) {
-        error.value = e instanceof Error ? e.message : 'Network error';
+        error.value = e instanceof Error ? e.message : '網路錯誤';
         calculating.value = false;
     }
 }
@@ -119,7 +119,7 @@ function handleReset(): void {
 
 async function queryCalculation(): Promise<void> {
     if (!queryId.value.trim()) {
-        queryError.value = 'Please enter a calculation ID or UUID';
+        queryError.value = '請輸入計算 ID 或 UUID';
         return;
     }
 
@@ -135,13 +135,13 @@ async function queryCalculation(): Promise<void> {
         const data = await response.json();
 
         if (!response.ok) {
-            queryError.value = data.message || 'Calculation not found';
+            queryError.value = data.message || '找不到計算紀錄';
             return;
         }
 
         queryResult.value = data;
     } catch (e) {
-        queryError.value = e instanceof Error ? e.message : 'Network error';
+        queryError.value = e instanceof Error ? e.message : '網路錯誤';
     } finally {
         querying.value = false;
     }
@@ -153,7 +153,7 @@ function formatNumber(num: number): string {
 </script>
 
 <template>
-    <Head title="Calculate Pi" />
+    <Head title="計算 π" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-6">
@@ -173,7 +173,7 @@ function formatNumber(num: number): string {
 
                 <!-- Live Result Card -->
                 <div class="rounded-xl border border-sidebar-border/70 bg-card p-5 dark:border-sidebar-border">
-                    <h3 class="mb-4 text-lg font-semibold">Result</h3>
+                    <h3 class="mb-4 text-lg font-semibold">即時結果</h3>
 
                     <div v-if="error" class="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                         {{ error }}
@@ -181,20 +181,20 @@ function formatNumber(num: number): string {
 
                     <template v-else-if="displayPi">
                         <div class="mb-4 text-center">
-                            <div class="text-xs text-muted-foreground">Calculated π</div>
+                            <div class="text-xs text-muted-foreground">計算 π</div>
                             <div class="text-3xl font-bold text-primary">
                                 {{ typeof displayPi === 'number' ? displayPi.toFixed(8) : displayPi }}
                             </div>
                             <div class="mt-1 text-xs text-muted-foreground">
-                                Actual π = {{ Math.PI.toFixed(8) }}
+                                實際 π = {{ Math.PI.toFixed(8) }}
                             </div>
                         </div>
 
                         <!-- Progress Bar (distributed mode) -->
                         <div v-if="isStreaming || (streamData && streamData.total_chunks > 0)" class="mb-4">
                             <div class="mb-1 flex justify-between text-xs text-muted-foreground">
-                                <span>Progress</span>
-                                <span>{{ streamData?.completed_chunks ?? 0 }} / {{ streamData?.total_chunks ?? 0 }} chunks</span>
+                                <span>進度</span>
+                                <span>{{ streamData?.completed_chunks ?? 0 }} / {{ streamData?.total_chunks ?? 0 }} 區塊</span>
                             </div>
                             <div class="h-2 overflow-hidden rounded-full bg-muted">
                                 <div
@@ -206,19 +206,19 @@ function formatNumber(num: number): string {
 
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
-                                <span class="text-muted-foreground">Inside</span>
+                                <span class="text-muted-foreground">圓內點數</span>
                                 <span>{{ formatNumber(insideCount) }}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-muted-foreground">Total</span>
+                                <span class="text-muted-foreground">總點數</span>
                                 <span>{{ formatNumber(totalCount) }}</span>
                             </div>
                             <div v-if="result?.duration_ms || streamData?.duration_ms" class="flex justify-between">
-                                <span class="text-muted-foreground">Duration</span>
+                                <span class="text-muted-foreground">耗時</span>
                                 <span>{{ result?.duration_ms ?? streamData?.duration_ms }} ms</span>
                             </div>
                             <div v-if="result?.status || streamData?.status" class="flex justify-between">
-                                <span class="text-muted-foreground">Status</span>
+                                <span class="text-muted-foreground">狀態</span>
                                 <span
                                     class="rounded-full px-2 py-0.5 text-xs font-semibold"
                                     :class="{
@@ -235,7 +235,7 @@ function formatNumber(num: number): string {
                     </template>
 
                     <div v-else class="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                        Configure and start a calculation
+                        請設定參數並開始計算
                     </div>
                 </div>
             </div>
@@ -254,14 +254,14 @@ function formatNumber(num: number): string {
 
             <!-- Query Section -->
             <div class="rounded-xl border border-sidebar-border/70 bg-card p-6 dark:border-sidebar-border">
-                <h2 class="mb-4 text-2xl font-bold">Query Existing Calculation</h2>
+                <h2 class="mb-4 text-2xl font-bold">查詢歷史計算</h2>
 
                 <div class="mb-4">
-                    <label class="mb-2 block text-sm font-medium">Calculation ID or UUID</label>
+                    <label class="mb-2 block text-sm font-medium">計算 ID 或 UUID</label>
                     <input
                         v-model="queryId"
                         type="text"
-                        placeholder="Enter ID or UUID"
+                        placeholder="輸入 ID 或 UUID"
                         class="w-full rounded-lg border border-input bg-background px-4 py-2"
                         :disabled="querying"
                         @keyup.enter="queryCalculation"
@@ -274,14 +274,14 @@ function formatNumber(num: number): string {
                     :disabled="querying"
                     @click="queryCalculation"
                 >
-                    {{ querying ? 'Querying...' : 'Query Calculation' }}
+                    {{ querying ? '查詢中...' : '查詢計算' }}
                 </button>
 
                 <div
                     v-if="queryError"
                     class="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive"
                 >
-                    <p class="font-semibold">Error:</p>
+                    <p class="font-semibold">錯誤：</p>
                     <p>{{ queryError }}</p>
                 </div>
 
@@ -289,22 +289,22 @@ function formatNumber(num: number): string {
                     v-if="queryResult"
                     class="mt-6 rounded-lg border border-sidebar-border/70 bg-muted p-6 dark:border-sidebar-border"
                 >
-                    <h3 class="mb-4 text-xl font-semibold">Query Result</h3>
+                    <h3 class="mb-4 text-xl font-semibold">查詢結果</h3>
                     <div class="grid gap-3">
                         <div class="flex justify-between">
-                            <span class="font-medium">ID:</span>
+                            <span class="font-medium">ID：</span>
                             <span class="font-mono">{{ queryResult.id }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="font-medium">UUID:</span>
+                            <span class="font-medium">UUID：</span>
                             <span class="font-mono text-sm">{{ queryResult.uuid }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="font-medium">Mode:</span>
+                            <span class="font-medium">模式：</span>
                             <span>{{ queryResult.mode }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="font-medium">Status:</span>
+                            <span class="font-medium">狀態：</span>
                             <span
                                 class="rounded-full px-2 py-1 text-xs font-semibold"
                                 :class="{
@@ -319,19 +319,19 @@ function formatNumber(num: number): string {
                         </div>
                         <template v-if="queryResult.status === 'completed'">
                             <div class="flex justify-between">
-                                <span class="font-medium">Calculated Pi (π):</span>
+                                <span class="font-medium">計算 π：</span>
                                 <span class="text-lg font-bold text-primary">{{ queryResult.result_pi }}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="font-medium">Duration:</span>
+                                <span class="font-medium">耗時：</span>
                                 <span>{{ queryResult.duration_ms }} ms</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="font-medium">Points Inside Circle:</span>
+                                <span class="font-medium">圓內點數：</span>
                                 <span>{{ formatNumber(queryResult.result_inside ?? 0) }}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="font-medium">Total Points:</span>
+                                <span class="font-medium">總點數：</span>
                                 <span>{{ formatNumber(queryResult.result_total ?? 0) }}</span>
                             </div>
                         </template>

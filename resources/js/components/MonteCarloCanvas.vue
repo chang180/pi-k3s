@@ -91,7 +91,7 @@ watch(() => [props.insideCount, props.totalCount], () => draw());
 
 <template>
     <div class="rounded-xl border border-sidebar-border/70 bg-card p-5 dark:border-sidebar-border">
-        <h3 class="mb-3 text-lg font-semibold">Monte Carlo Simulation</h3>
+        <h3 class="mb-3 text-lg font-semibold">蒙地卡羅模擬</h3>
         <div class="flex items-center justify-center">
             <canvas
                 ref="canvasRef"
@@ -103,11 +103,11 @@ watch(() => [props.insideCount, props.totalCount], () => draw());
         <div class="mt-3 flex justify-between text-xs text-muted-foreground">
             <span>
                 <span class="mr-1 inline-block h-2 w-2 rounded-full bg-blue-400" />
-                Inside: {{ insideCount.toLocaleString() }}
+                圓內：{{ insideCount.toLocaleString() }}
             </span>
             <span>
                 <span class="mr-1 inline-block h-2 w-2 rounded-full bg-red-400" />
-                Outside: {{ (totalCount - insideCount).toLocaleString() }}
+                圓外：{{ (totalCount - insideCount).toLocaleString() }}
             </span>
         </div>
     </div>

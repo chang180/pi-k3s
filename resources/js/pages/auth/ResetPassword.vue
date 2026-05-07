@@ -19,10 +19,10 @@ const inputEmail = ref(props.email);
 
 <template>
     <AuthLayout
-        title="Reset password"
-        description="Please enter your new password below"
+        title="重設密碼"
+        description="請輸入您的新密碼"
     >
-        <Head title="Reset password" />
+        <Head title="重設密碼" />
 
         <Form
             v-bind="update.form()"
@@ -32,7 +32,7 @@ const inputEmail = ref(props.email);
         >
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="email">Email</Label>
+                    <Label for="email">電子郵件</Label>
                     <Input
                         id="email"
                         type="email"
@@ -46,7 +46,7 @@ const inputEmail = ref(props.email);
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password">Password</Label>
+                    <Label for="password">密碼</Label>
                     <Input
                         id="password"
                         type="password"
@@ -54,14 +54,14 @@ const inputEmail = ref(props.email);
                         autocomplete="new-password"
                         class="mt-1 block w-full"
                         autofocus
-                        placeholder="Password"
+                        placeholder="密碼"
                     />
                     <InputError :message="errors.password" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="password_confirmation">
-                        Confirm Password
+                        確認密碼
                     </Label>
                     <Input
                         id="password_confirmation"
@@ -69,7 +69,7 @@ const inputEmail = ref(props.email);
                         name="password_confirmation"
                         autocomplete="new-password"
                         class="mt-1 block w-full"
-                        placeholder="Confirm password"
+                        placeholder="再次輸入密碼"
                     />
                     <InputError :message="errors.password_confirmation" />
                 </div>
@@ -81,7 +81,7 @@ const inputEmail = ref(props.email);
                     data-test="reset-password-button"
                 >
                     <Spinner v-if="processing" />
-                    Reset password
+                    重設密碼
                 </Button>
             </div>
         </Form>

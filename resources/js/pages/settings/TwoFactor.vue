@@ -25,7 +25,7 @@ withDefaults(defineProps<Props>(), {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Two-Factor Authentication',
+        title: '兩步驟驗證',
         href: show.url(),
     },
 ];
@@ -40,29 +40,27 @@ onUnmounted(() => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <Head title="Two-Factor Authentication" />
+        <Head title="兩步驟驗證" />
 
-        <h1 class="sr-only">Two-Factor Authentication Settings</h1>
+        <h1 class="sr-only">兩步驟驗證設定</h1>
 
         <SettingsLayout>
             <div class="space-y-6">
                 <Heading
                     variant="small"
-                    title="Two-Factor Authentication"
-                    description="Manage your two-factor authentication settings"
+                    title="兩步驟驗證"
+                    description="管理您的兩步驟驗證設定"
                 />
 
                 <div
                     v-if="!twoFactorEnabled"
                     class="flex flex-col items-start justify-start space-y-4"
                 >
-                    <Badge variant="destructive">Disabled</Badge>
+                    <Badge variant="destructive">未啟用</Badge>
 
                     <p class="text-muted-foreground">
-                        When you enable two-factor authentication, you will be
-                        prompted for a secure pin during login. This pin can be
-                        retrieved from a TOTP-supported application on your
-                        phone.
+                        啟用兩步驟驗證後，登入時會要求您輸入安全 PIN 碼，
+                        該 PIN 碼可從手機上支援 TOTP 的驗證器 App 取得。
                     </p>
 
                     <div>
@@ -70,7 +68,7 @@ onUnmounted(() => {
                             v-if="hasSetupData"
                             @click="showSetupModal = true"
                         >
-                            <ShieldCheck />Continue Setup
+                            <ShieldCheck />繼續設定
                         </Button>
                         <Form
                             v-else
@@ -79,7 +77,7 @@ onUnmounted(() => {
                             #default="{ processing }"
                         >
                             <Button type="submit" :disabled="processing">
-                                <ShieldCheck />Enable 2FA</Button
+                                <ShieldCheck />啟用兩步驟驗證</Button
                             ></Form
                         >
                     </div>
@@ -89,13 +87,11 @@ onUnmounted(() => {
                     v-else
                     class="flex flex-col items-start justify-start space-y-4"
                 >
-                    <Badge variant="default">Enabled</Badge>
+                    <Badge variant="default">已啟用</Badge>
 
                     <p class="text-muted-foreground">
-                        With two-factor authentication enabled, you will be
-                        prompted for a secure, random pin during login, which
-                        you can retrieve from the TOTP-supported application on
-                        your phone.
+                        已啟用兩步驟驗證，登入時會要求您輸入隨機安全 PIN 碼，
+                        該 PIN 碼可從手機上支援 TOTP 的驗證器 App 取得。
                     </p>
 
                     <TwoFactorRecoveryCodes />
@@ -108,7 +104,7 @@ onUnmounted(() => {
                                 :disabled="processing"
                             >
                                 <ShieldBan />
-                                Disable 2FA
+                                停用兩步驟驗證
                             </Button>
                         </Form>
                     </div>

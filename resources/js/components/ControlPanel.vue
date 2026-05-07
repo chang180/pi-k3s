@@ -20,17 +20,17 @@ const pointsOptions = [
 ];
 
 const modeOptions = [
-    { value: 'single', label: 'Single' },
-    { value: 'distributed', label: 'Distributed' },
+    { value: 'single', label: '單機' },
+    { value: 'distributed', label: '分散式' },
 ];
 </script>
 
 <template>
     <div class="rounded-xl border border-sidebar-border/70 bg-card p-5 dark:border-sidebar-border">
-        <h3 class="mb-4 text-lg font-semibold">Control Panel</h3>
+        <h3 class="mb-4 text-lg font-semibold">控制面板</h3>
 
         <div class="mb-4">
-            <label class="mb-1.5 block text-sm font-medium">Points</label>
+            <label class="mb-1.5 block text-sm font-medium">點數</label>
             <select
                 v-model.number="selectedPoints"
                 class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
@@ -43,7 +43,7 @@ const modeOptions = [
         </div>
 
         <div class="mb-4">
-            <label class="mb-1.5 block text-sm font-medium">Mode</label>
+            <label class="mb-1.5 block text-sm font-medium">執行模式</label>
             <div class="flex gap-2">
                 <button
                     v-for="opt in modeOptions"
@@ -70,7 +70,7 @@ const modeOptions = [
                 class="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 @click="emit('start')"
             >
-                Start
+                開始
             </button>
             <button
                 v-if="calculating || isStreaming"
@@ -78,7 +78,7 @@ const modeOptions = [
                 class="flex-1 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90"
                 @click="emit('stop')"
             >
-                Stop
+                停止
             </button>
             <button
                 type="button"
@@ -86,7 +86,7 @@ const modeOptions = [
                 :disabled="calculating || isStreaming"
                 @click="emit('reset')"
             >
-                Reset
+                重置
             </button>
         </div>
     </div>

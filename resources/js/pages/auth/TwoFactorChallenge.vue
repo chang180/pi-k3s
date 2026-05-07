@@ -16,18 +16,18 @@ import { store } from '@/routes/two-factor/login';
 const authConfigContent = computed<TwoFactorConfigContent>(() => {
     if (showRecoveryInput.value) {
         return {
-            title: 'Recovery Code',
+            title: '復原碼',
             description:
-                'Please confirm access to your account by entering one of your emergency recovery codes.',
-            buttonText: 'login using an authentication code',
+                '請輸入緊急復原碼以確認您的帳號存取權限。',
+            buttonText: '改用驗證碼登入',
         };
     }
 
     return {
-        title: 'Authentication Code',
+        title: '驗證碼',
         description:
-            'Enter the authentication code provided by your authenticator application.',
-        buttonText: 'login using a recovery code',
+            '請輸入您驗證器 App 提供的驗證碼。',
+        buttonText: '改用復原碼登入',
     };
 });
 
@@ -47,7 +47,7 @@ const code = ref<string>('');
         :title="authConfigContent.title"
         :description="authConfigContent.description"
     >
-        <Head title="Two-Factor Authentication" />
+        <Head title="兩步驟驗證" />
 
         <div class="space-y-6">
             <template v-if="!showRecoveryInput">
@@ -82,10 +82,10 @@ const code = ref<string>('');
                         <InputError :message="errors.code" />
                     </div>
                     <Button type="submit" class="w-full" :disabled="processing"
-                        >Continue</Button
+                        >繼續</Button
                     >
                     <div class="text-center text-sm text-muted-foreground">
-                        <span>or you can </span>
+                        <span>或您可以 </span>
                         <button
                             type="button"
                             class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
@@ -107,7 +107,7 @@ const code = ref<string>('');
                     <Input
                         name="recovery_code"
                         type="text"
-                        placeholder="Enter recovery code"
+                        placeholder="輸入復原碼"
                         :autofocus="showRecoveryInput"
                         required
                     />

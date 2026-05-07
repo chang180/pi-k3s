@@ -18,7 +18,7 @@ async function fetchData(): Promise<void> {
         metrics.value = await metricsRes.json();
         error.value = null;
     } catch (e) {
-        error.value = e instanceof Error ? e.message : 'Failed to fetch K8s status';
+        error.value = e instanceof Error ? e.message : '無法取得 K8s 狀態';
     }
 }
 
@@ -36,7 +36,7 @@ onUnmounted(() => {
 
 <template>
     <div class="rounded-xl border border-sidebar-border/70 bg-card p-5 dark:border-sidebar-border">
-        <h3 class="mb-4 text-lg font-semibold">Kubernetes Status</h3>
+        <h3 class="mb-4 text-lg font-semibold">Kubernetes 狀態</h3>
 
         <div v-if="error" class="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {{ error }}
@@ -44,13 +44,13 @@ onUnmounted(() => {
 
         <template v-else-if="status">
             <div v-if="!status.in_cluster" class="mb-3 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-                Not running in K8s cluster (development mode)
+                未在 K8s 叢集中執行（開發模式）
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <!-- Pod Count -->
                 <div class="rounded-lg bg-muted p-3">
-                    <div class="text-xs text-muted-foreground">Pods</div>
+                    <div class="text-xs text-muted-foreground">Pod 數量</div>
                     <div class="text-2xl font-bold">{{ status.pod_count }}</div>
                 </div>
 
@@ -58,14 +58,14 @@ onUnmounted(() => {
                 <div class="rounded-lg bg-muted p-3">
                     <div class="text-xs text-muted-foreground">HPA</div>
                     <div class="text-2xl font-bold">
-                        {{ status.hpa?.max_replicas ? 'Active' : 'Off' }}
+                        {{ status.hpa?.max_replicas ? '啟用中' : '未啟用' }}
                     </div>
                 </div>
 
                 <!-- HPA Details -->
                 <template v-if="status.hpa?.max_replicas">
                     <div class="rounded-lg bg-muted p-3">
-                        <div class="text-xs text-muted-foreground">Replicas</div>
+                        <div class="text-xs text-muted-foreground">副本數</div>
                         <div class="text-lg font-semibold">
                             {{ status.hpa.current_replicas }} / {{ status.hpa.min_replicas }}-{{ status.hpa.max_replicas }}
                         </div>
@@ -75,7 +75,7 @@ onUnmounted(() => {
 
             <!-- Pod Metrics -->
             <div v-if="metrics?.pods?.length" class="mt-4">
-                <h4 class="mb-2 text-sm font-medium">Pod Metrics</h4>
+                <h4 class="mb-2 text-sm font-medium">Pod 資源使用</h4>
                 <div class="space-y-2">
                     <div
                         v-for="pod in metrics.pods"
@@ -84,8 +84,8 @@ onUnmounted(() => {
                     >
                         <span class="truncate font-mono text-xs">{{ pod.name }}</span>
                         <div class="flex gap-3 text-xs text-muted-foreground">
-                            <span>CPU: {{ pod.cpu }}</span>
-                            <span>Mem: {{ pod.memory }}</span>
+                            <span>CPU：{{ pod.cpu }}</span>
+                            <span>記憶體：{{ pod.memory }}</span>
                         </div>
                     </div>
                 </div>

@@ -24,7 +24,7 @@ const chartData = computed(() => ({
     labels: props.piHistory.map((e) => `${e.time.toFixed(1)}s`),
     datasets: [
         {
-            label: 'Calculated π',
+            label: '計算 π',
             data: props.piHistory.map((e) => e.pi),
             borderColor: 'rgb(99, 102, 241)',
             backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -33,7 +33,7 @@ const chartData = computed(() => ({
             pointRadius: 2,
         },
         {
-            label: 'Actual π',
+            label: '實際 π',
             data: props.piHistory.map(() => Math.PI),
             borderColor: 'rgba(248, 113, 113, 0.7)',
             borderDash: [5, 5],
@@ -70,7 +70,7 @@ const chartOptions = {
 
 <template>
     <div class="rounded-xl border border-sidebar-border/70 bg-card p-5 dark:border-sidebar-border">
-        <h3 class="mb-3 text-lg font-semibold">π Convergence</h3>
+        <h3 class="mb-3 text-lg font-semibold">π 收斂曲線</h3>
         <div class="h-64">
             <Line :data="chartData" :options="chartOptions" />
         </div>

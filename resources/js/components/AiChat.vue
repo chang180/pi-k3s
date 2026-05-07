@@ -39,7 +39,7 @@ async function sendMessage(text?: string): Promise<void> {
         if (!response.ok) {
             const data = await response.json();
             messages.value[messages.value.length - 1].content =
-                data.message || 'Error occurred';
+                data.message || '發生錯誤';
             isLoading.value = false;
             return;
         }
@@ -48,7 +48,7 @@ async function sendMessage(text?: string): Promise<void> {
         const decoder = new TextDecoder();
 
         if (!reader) {
-            messages.value[messages.value.length - 1].content = 'Stream unavailable';
+            messages.value[messages.value.length - 1].content = '串流不可用';
             isLoading.value = false;
             return;
         }
@@ -89,7 +89,7 @@ async function sendMessage(text?: string): Promise<void> {
         }
     } catch (e) {
         messages.value[messages.value.length - 1].content =
-            e instanceof Error ? e.message : 'Network error';
+            e instanceof Error ? e.message : '網路錯誤';
     } finally {
         isLoading.value = false;
     }
@@ -104,7 +104,7 @@ function scrollToBottom(): void {
 
 <template>
     <div class="rounded-xl border border-sidebar-border/70 bg-card p-5 dark:border-sidebar-border">
-        <h3 class="mb-3 text-lg font-semibold">Ask Pi-K3s AI</h3>
+        <h3 class="mb-3 text-lg font-semibold">詢問 Pi-K3s AI</h3>
 
         <!-- Chat Messages -->
         <div
@@ -112,7 +112,7 @@ function scrollToBottom(): void {
             class="mb-3 h-64 space-y-3 overflow-y-auto rounded-lg bg-muted p-3"
         >
             <div v-if="messages.length === 0" class="flex h-full flex-col items-center justify-center gap-3">
-                <p class="text-sm text-muted-foreground">Ask me about Pi-K3s!</p>
+                <p class="text-sm text-muted-foreground">向我詢問 Pi-K3s 相關問題！</p>
                 <div class="flex flex-wrap justify-center gap-2">
                     <button
                         v-for="s in suggestions"
@@ -154,7 +154,7 @@ function scrollToBottom(): void {
             <input
                 v-model="input"
                 type="text"
-                placeholder="Ask a question..."
+                placeholder="輸入問題..."
                 class="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 :disabled="isLoading"
                 @keyup.enter="sendMessage()"
@@ -165,12 +165,12 @@ function scrollToBottom(): void {
                 :disabled="isLoading || !input.trim()"
                 @click="sendMessage()"
             >
-                Send
+                送出
             </button>
         </div>
 
         <p class="mt-2 text-xs text-muted-foreground">
-            Powered by OpenAI. Requires OPENAI_API_KEY.
+            由 OpenAI 提供，需要設定 OPENAI_API_KEY。
         </p>
     </div>
 </template>
