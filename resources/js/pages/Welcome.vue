@@ -26,7 +26,7 @@ const features = [
     {
         icon: Cpu,
         title: '1C1G 友善部署',
-        description: '專為樹莓派與最小 VPS 調校：K3s 輕量化、PHP-FPM 2 worker、SQLite、自動 swap。',
+        description: '專為最小型 VPS 調校：K3s 輕量化、PHP-FPM 2 worker、SQLite、自動 swap。',
     },
 ];
 
@@ -39,7 +39,7 @@ const steps = [
 </script>
 
 <template>
-    <Head title="Pi-K3s — 在樹莓派 K3s 上看見 π 的誕生" />
+    <Head title="Pi-K3s — 在 K3s 上看見 π 的誕生" />
 
     <div class="relative min-h-screen overflow-hidden bg-linear-to-b from-white via-white to-indigo-50/30 text-neutral-900 dark:from-neutral-950 dark:via-neutral-950 dark:to-indigo-950/20 dark:text-neutral-100">
         <!-- Decorative grid -->
@@ -86,12 +86,12 @@ const steps = [
                         Laravel 13 · Vue 3 · K3s · 1C1G 友善
                     </div>
                     <h1 class="text-4xl leading-tight font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                        在樹莓派 K3s 上
+                        在 Kubernetes 叢集上
                         <br />
                         <span class="bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">看見 π 的誕生</span>
                     </h1>
                     <p class="mt-6 max-w-xl text-base text-neutral-600 sm:text-lg dark:text-neutral-400">
-                        以蒙地卡羅演算法估算圓周率，在 Kubernetes 上實際展示 HPA 自動擴展、Pod 分散計算與即時視覺化——
+                        透過蒙地卡羅演算法估算 π，把 HPA 自動擴展、Pod 分散計算與即時視覺化等雲原生概念實際展示出來——
                         所有功能都能在一台 1 vCPU、1 GB 記憶體的小型 VPS 上跑起來。
                     </p>
 
