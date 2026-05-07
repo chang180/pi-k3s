@@ -108,12 +108,13 @@ $KUBECTL apply -f k8s/hpa.yaml 2>/dev/null || true
 # 注意：web deployment 使用 hostPort，策略已設為 maxSurge=0（先終止舊 Pod 再啟動新 Pod）
 # worker deployment 不對外，作為 K3s 單節點上的可擴展計算層
 echo "[4/4] 觸發 rollout restart 並等待就緒..."
+# 先等基礎設施就緒，再啟動 Laravel（避免 migration 因 MariaDB 未就緒而失敗）
 $KUBECTL rollout restart deployment/mariadb -n $NAMESPACE
 $KUBECTL rollout restart deployment/redis -n $NAMESPACE
-$KUBECTL rollout restart deployment/laravel-app -n $NAMESPACE
-$KUBECTL rollout restart deployment/laravel-worker -n $NAMESPACE
 $KUBECTL rollout status deployment/mariadb -n $NAMESPACE --timeout=180s
 $KUBECTL rollout status deployment/redis -n $NAMESPACE --timeout=120s
+$KUBECTL rollout restart deployment/laravel-app -n $NAMESPACE
+$KUBECTL rollout restart deployment/laravel-worker -n $NAMESPACE
 $KUBECTL rollout status deployment/laravel-app -n $NAMESPACE --timeout=180s
 $KUBECTL rollout status deployment/laravel-worker -n $NAMESPACE --timeout=180s
 

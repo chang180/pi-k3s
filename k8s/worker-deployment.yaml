@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-worker
+  namespace: pi-k3s
+  labels:
+    app: laravel
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: laravel
+        component: worker
+    spec:
+      containers:
+      - name: worker
+        image: pi-k3s:latest
+        imagePullPolicy: Never
+        env:
+        - name: APP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: APP_NAME
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: APP_ENV
+        - name: APP_DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: APP_DEBUG
+        - name: APP_URL
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: APP_URL
+        - name: LOG_CHANNEL
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: LOG_CHANNEL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: LOG_LEVEL
+        - name: DB_CONNECTION
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: DB_CONNECTION
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: DB_PORT
+        - name: DB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: DB_DATABASE
+        - name: DB_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: DB_USERNAME
+        - name: CACHE_STORE
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: CACHE_STORE
+        - name: SESSION_DRIVER
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: SESSION_DRIVER
+        - name: QUEUE_CONNECTION
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: QUEUE_CONNECTION
+        - name: BROADCAST_DRIVER
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: BROADCAST_DRIVER
+        - name: REDIS_CLIENT
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: REDIS_CLIENT
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: REDIS_PORT
+        - name: APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: APP_KEY
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: DB_PASSWORD
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: REDIS_PASSWORD
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: OPENAI_API_KEY
+              optional: true
+        - name: CONTAINER_ROLE
+          value: "worker"
+        - name: AUTO_MIGRATE
+          value: "false"
+        resources:
+          requests:
+            memory: "96Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "700m"
