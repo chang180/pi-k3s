@@ -39,6 +39,24 @@ REDIS_PORT=6379
 REDIS_PASSWORD=null
 ```
 
+## 本地 Docker 開發
+
+`docker-compose.yml` 會直接起：
+
+- `app`
+- `worker`
+- `mariadb`
+- `redis`
+
+這組設定只用於本地開發驗證，帳密是固定的本地值，不是正式環境設定來源。
+
+- MariaDB database: `pi_k3s`
+- MariaDB username: `pi_k3s`
+- MariaDB password: `pi_k3s_local`
+- MariaDB root password: `root_local`
+
+正式環境仍以 K3s 的 `ConfigMap` / `Secret` 為準。
+
 ## 正式環境建議
 
 `k8s/configmap.yaml`：
