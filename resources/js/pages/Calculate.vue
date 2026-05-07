@@ -157,8 +157,25 @@ function formatNumber(num: number): string {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-6">
+            <!-- Page header -->
+            <header class="flex flex-col gap-1.5 border-b border-sidebar-border/60 pb-4 dark:border-sidebar-border">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold tracking-tight">計算 π</h1>
+                    <span
+                        v-if="result?.uuid || streamData?.uuid"
+                        class="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground"
+                        :title="result?.uuid ?? streamData?.uuid"
+                    >
+                        {{ (result?.uuid ?? streamData?.uuid)?.slice(0, 8) }}…
+                    </span>
+                </div>
+                <p class="text-sm text-muted-foreground">
+                    以蒙地卡羅演算法估算圓周率，觀察 K8s HPA 與分散式計算的即時表現。
+                </p>
+            </header>
+
             <!-- Top Row: Control Panel | Canvas | Live Result -->
-            <div class="grid gap-6 lg:grid-cols-3">
+            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <ControlPanel
                     v-model:selected-points="selectedPoints"
                     v-model:selected-mode="selectedMode"
@@ -252,92 +269,95 @@ function formatNumber(num: number): string {
             <!-- AI Chat -->
             <AiChat />
 
-            <!-- Query Section -->
-            <div class="rounded-xl border border-sidebar-border/70 bg-card p-6 dark:border-sidebar-border">
-                <h2 class="mb-4 text-2xl font-bold">查詢歷史計算</h2>
+            <!-- Collapsible: Query history -->
+            <details class="group rounded-xl border border-sidebar-border/70 bg-card dark:border-sidebar-border">
+                <summary class="flex cursor-pointer list-none items-center justify-between p-5 hover:bg-muted/50">
+                    <div>
+                        <h3 class="text-lg font-semibold">查詢歷史計算</h3>
+                        <p class="text-xs text-muted-foreground">輸入 ID 或 UUID 取得舊有計算結果</p>
+                    </div>
+                    <span class="text-muted-foreground transition-transform group-open:rotate-180">▾</span>
+                </summary>
+                <div class="border-t border-sidebar-border/70 p-6 dark:border-sidebar-border">
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <input
+                            v-model="queryId"
+                            type="text"
+                            placeholder="輸入 ID 或 UUID"
+                            class="flex-1 rounded-lg border border-input bg-background px-4 py-2 text-sm"
+                            :disabled="querying"
+                            @keyup.enter="queryCalculation"
+                        />
+                        <button
+                            type="button"
+                            class="rounded-lg bg-secondary px-6 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                            :disabled="querying"
+                            @click="queryCalculation"
+                        >
+                            {{ querying ? '查詢中...' : '查詢' }}
+                        </button>
+                    </div>
 
-                <div class="mb-4">
-                    <label class="mb-2 block text-sm font-medium">計算 ID 或 UUID</label>
-                    <input
-                        v-model="queryId"
-                        type="text"
-                        placeholder="輸入 ID 或 UUID"
-                        class="w-full rounded-lg border border-input bg-background px-4 py-2"
-                        :disabled="querying"
-                        @keyup.enter="queryCalculation"
-                    />
-                </div>
+                    <div
+                        v-if="queryError"
+                        class="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+                    >
+                        {{ queryError }}
+                    </div>
 
-                <button
-                    type="button"
-                    class="rounded-lg bg-secondary px-6 py-2 text-secondary-foreground transition-colors hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                    :disabled="querying"
-                    @click="queryCalculation"
-                >
-                    {{ querying ? '查詢中...' : '查詢計算' }}
-                </button>
-
-                <div
-                    v-if="queryError"
-                    class="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive"
-                >
-                    <p class="font-semibold">錯誤：</p>
-                    <p>{{ queryError }}</p>
-                </div>
-
-                <div
-                    v-if="queryResult"
-                    class="mt-6 rounded-lg border border-sidebar-border/70 bg-muted p-6 dark:border-sidebar-border"
-                >
-                    <h3 class="mb-4 text-xl font-semibold">查詢結果</h3>
-                    <div class="grid gap-3">
-                        <div class="flex justify-between">
-                            <span class="font-medium">ID：</span>
-                            <span class="font-mono">{{ queryResult.id }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="font-medium">UUID：</span>
-                            <span class="font-mono text-sm">{{ queryResult.uuid }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="font-medium">模式：</span>
-                            <span>{{ queryResult.mode }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="font-medium">狀態：</span>
-                            <span
-                                class="rounded-full px-2 py-1 text-xs font-semibold"
-                                :class="{
-                                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100':
-                                        queryResult.status === 'completed',
-                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100':
-                                        queryResult.status === 'running',
-                                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100':
-                                        queryResult.status === 'failed',
-                                }"
-                            >{{ queryResult.status }}</span>
-                        </div>
-                        <template v-if="queryResult.status === 'completed'">
-                            <div class="flex justify-between">
-                                <span class="font-medium">計算 π：</span>
-                                <span class="text-lg font-bold text-primary">{{ queryResult.result_pi }}</span>
+                    <div
+                        v-if="queryResult"
+                        class="mt-4 rounded-lg bg-muted p-4 text-sm"
+                    >
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <div class="flex justify-between gap-3">
+                                <span class="text-muted-foreground">ID</span>
+                                <span class="font-mono">{{ queryResult.id }}</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="font-medium">耗時：</span>
-                                <span>{{ queryResult.duration_ms }} ms</span>
+                            <div class="flex justify-between gap-3">
+                                <span class="text-muted-foreground">模式</span>
+                                <span>{{ queryResult.mode }}</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="font-medium">圓內點數：</span>
-                                <span>{{ formatNumber(queryResult.result_inside ?? 0) }}</span>
+                            <div class="flex justify-between gap-3 sm:col-span-2">
+                                <span class="text-muted-foreground">UUID</span>
+                                <span class="truncate font-mono text-xs" :title="queryResult.uuid">{{ queryResult.uuid }}</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="font-medium">總點數：</span>
-                                <span>{{ formatNumber(queryResult.result_total ?? 0) }}</span>
+                            <div class="flex justify-between gap-3">
+                                <span class="text-muted-foreground">狀態</span>
+                                <span
+                                    class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                    :class="{
+                                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100':
+                                            queryResult.status === 'completed',
+                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100':
+                                            queryResult.status === 'running',
+                                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100':
+                                            queryResult.status === 'failed',
+                                    }"
+                                >{{ queryResult.status }}</span>
                             </div>
-                        </template>
+                            <template v-if="queryResult.status === 'completed'">
+                                <div class="flex justify-between gap-3">
+                                    <span class="text-muted-foreground">耗時</span>
+                                    <span>{{ queryResult.duration_ms }} ms</span>
+                                </div>
+                                <div class="flex justify-between gap-3 sm:col-span-2">
+                                    <span class="text-muted-foreground">計算 π</span>
+                                    <span class="font-bold text-primary">{{ queryResult.result_pi }}</span>
+                                </div>
+                                <div class="flex justify-between gap-3">
+                                    <span class="text-muted-foreground">圓內點數</span>
+                                    <span>{{ formatNumber(queryResult.result_inside ?? 0) }}</span>
+                                </div>
+                                <div class="flex justify-between gap-3">
+                                    <span class="text-muted-foreground">總點數</span>
+                                    <span>{{ formatNumber(queryResult.result_total ?? 0) }}</span>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </details>
         </div>
     </AppLayout>
 </template>

@@ -2,8 +2,8 @@
 
 ## Status
 
-- **目前 phase**：Phase 4 待開始
-- **已完成 phase**：Phase 1, 2, 3
+- **目前 phase**：Phase 5 待開始
+- **已完成 phase**：Phase 1, 2, 3, 4
 - **上次 commit**：（將於本 phase 結束建立）
 
 ## Completed
@@ -12,6 +12,7 @@
 - ✅ Phase 1: 基礎清理
 - ✅ Phase 2: UI 中文化
 - ✅ Phase 3: 首頁重設計
+- ✅ Phase 4: /calculate UI 重整
 
 ## Phase 1: 基礎清理（已完成）
 
@@ -56,7 +57,14 @@
 - [x] `vendor/bin/pint --dirty --format agent`：passed
 - [x] `curl https://pi-k3s.test/`：Inertia 回傳 component=Welcome、prop canRegister 正確
 
-## Phase 4: /calculate UI 重整（待開始）
+## Phase 4: /calculate UI 重整（已完成）
+
+- [x] 加 page header（h1「計算 π」+ 副標 + 即時顯示 UUID 前 8 碼）
+- [x] 上排 grid 響應式：`md:grid-cols-2 lg:grid-cols-3`（中型螢幕從 1 欄改 2 欄，桌機 3 欄）
+- [x] Query 區塊改為 `<details>` 折疊（預設收起，不主要佔位）
+- [x] Query 結果改為 grid 雙欄、視覺更乾淨
+- [x] AiChat 維持原本（已是完整 card），不重複包裝
+- [x] `npm run build`、test、pint 全綠
 
 ## Phase 5: K8s 狀態強化（待開始）
 
@@ -89,6 +97,9 @@ None
 ### Phase 3
 - [resources/js/pages/Welcome.vue](resources/js/pages/Welcome.vue) — 全新 Pi-K3s 主題 landing
 
+### Phase 4
+- [resources/js/pages/Calculate.vue](resources/js/pages/Calculate.vue) — page header、grid 響應式、Query 改折疊
+
 ## Verification
 
 ### Phase 1
@@ -108,6 +119,12 @@ None
 - `curl -sk https://pi-k3s.test/`：Inertia component=Welcome 正確
 - 待手動驗證：用戶在瀏覽器 https://pi-k3s.test/ 視覺確認
 
+### Phase 4
+- `npm run build`：成功
+- `php artisan test --compact`：83 passed
+- `vendor/bin/pint --dirty --format agent`：passed
+- 待手動驗證：用戶在瀏覽器 https://pi-k3s.test/calculate 跑完整流程
+
 ## Next Steps
 
-Phase 4：/calculate UI 重整。layout 重新設計、視覺優化、移除 Query 區塊或改為歷史紀錄。
+Phase 5：K8s 狀態展示強化。Pod 列表、HPA 詳情、節點資源、本機 fallback。
