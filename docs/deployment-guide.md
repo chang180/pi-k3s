@@ -269,6 +269,8 @@ curl -sfL https://get.k3s.io | sh -s - \
 
 ## 資源監控
 
+### 即席指令
+
 ```bash
 # Pod 資源使用
 sudo k3s kubectl top pod -n pi-k3s
@@ -279,6 +281,89 @@ sudo k3s kubectl top node
 # 全部資源概覽
 sudo k3s kubectl get all -n pi-k3s
 ```
+
+### 監控腳本
+
+[scripts/monitor-resources.sh](../scripts/monitor-resources.sh) 提供整合式檢查（節點、Pod、HPA、metrics-server 狀態）：
+
+```bash
+# 在本機執行（需先設好 ~/.kube/config-pi-k3s）
+./scripts/monitor-resources.sh
+```
+
+腳本會輸出：節點 CPU/記憶體用量、Pod 列表與資源、HPA 當前狀態、metrics-server 健康度。
+
+### 應用程式內建狀態
+
+部署後訪問 `https://<your-domain>/calculate`，頁面右下角的 **Kubernetes 狀態** 卡片會即時顯示：
+
+- Pod 數量與每個 Pod 的 phase（Running / Pending / Failed）
+- HPA current/min/max 副本數，以進度條呈現
+- 每個 Pod 的 CPU / 記憶體 metrics（需 metrics-server）
+
+頁面每 5 秒自動 polling，無需手動刷新。
+
+## 1C1G 環境調校建議
+
+> 此區塊整理 1 vCPU / 1 GB RAM 環境下的常見壓力點與建議。
+
+### 記憶體壓力
+
+當 `kubectl top node` 顯示 **記憶體 > 80%** 持續一段時間：
+
+```bash
+# 1. 把 HPA max 暫時調為 1（停止擴展）
+sudo k3s kubectl patch hpa laravel-app -n pi-k3s \
+  --type='json' -p='[{"op":"replace","path":"/spec/maxReplicas","value":1}]'
+
+# 2. 確認 PHP-FPM workers（預設已是 2，不建議再降；降到 1 會卡 SSE）
+# 編輯 docker/php-fpm-pool.conf 重 build
+
+# 3. 確認 swap 已建立（部署腳本會自動建 1G swap）
+swapon --show
+```
+
+### CPU 持續滿載
+
+K3s 的 metrics-server 本身會吃 50-80m CPU。1 vCPU 環境下：
+
+- 建議 HPA `targetCPUUtilizationPercentage` 設 60%（已預設）— 太高會反應太慢
+- 若連 metrics-server 都拖累，可考慮關閉 HPA 改為固定 1 副本：
+  ```bash
+  sudo k3s kubectl delete hpa laravel-app -n pi-k3s
+  sudo k3s kubectl scale deployment/laravel-app --replicas=1 -n pi-k3s
+  ```
+
+### SQLite 鎖定錯誤
+
+分散式模式下若多 Pod 同時寫入，可能出現 `database is locked`：
+
+- 確認 [k8s/deployment.yaml](../k8s/deployment.yaml.example) 的 `volumeMounts` 中 `storage` 是用 `emptyDir`（單 Pod 內）— 跨 Pod 共享 SQLite 並不適合
+- 1C1G 環境建議 HPA `maxReplicas: 1`，分散式效益不大
+- 真正想做多 Pod 分散，請改用 PostgreSQL 或 MySQL
+
+### SSE 連線中斷
+
+`/api/calculate/{id}/stream` 是長連線：
+
+- nginx `proxy_buffering off` 已預設關閉 SSE 緩衝
+- 若 1C1G 在重負載下逾時，可在 [docker/default.conf](../docker/default.conf) 將 `proxy_read_timeout` 調至 300s 以上
+- 前端會自動重連，但同一計算的進度會從頭重播
+
+## 部署檢核清單
+
+部署完成後，逐項確認：
+
+- [ ] `kubectl get pods -n pi-k3s` — Pod `Running` 且 `1/1` 就緒
+- [ ] `kubectl get hpa -n pi-k3s` — `TARGETS` 顯示具體 CPU%（不是 `<unknown>`）
+- [ ] `kubectl get svc -n pi-k3s` — Service 端點正確
+- [ ] `curl -k https://<host>/up` — 回 `200`
+- [ ] `curl -k -X POST https://<host>/api/calculate -d '{"total_points":100000,"mode":"single"}' -H 'Content-Type: application/json'` — 回 `201` 並含 `result_pi`
+- [ ] 瀏覽器訪問 `https://<host>/calculate`，跑一次完整計算（single + distributed），AI Chat（如果 OPENAI_API_KEY 已設）能正常對話
+- [ ] `kubectl top pod -n pi-k3s` — 單 Pod 記憶體 < 200Mi、CPU 閒置 < 50m
+- [ ] `swapon --show` — Swap 1GB 已啟用
+- [ ] HTTPS 憑證（如有）：`curl -I https://<host>/` 顯示有效憑證
+- [ ] HPA 壓力測試：發 1000 次 `100k single` 計算，確認 HPA 從 1 副本擴到 2 副本
 
 ## 清除部署
 

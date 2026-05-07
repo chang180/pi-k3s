@@ -2,8 +2,8 @@
 
 ## Status
 
-- **目前 phase**：Phase 6 待開始
-- **已完成 phase**：Phase 1, 2, 3, 4, 5
+- **目前 phase**：✅ 全部完成
+- **已完成 phase**：Phase 1, 2, 3, 4, 5, 6
 - **上次 commit**：（將於本 phase 結束建立）
 
 ## Completed
@@ -14,6 +14,7 @@
 - ✅ Phase 3: 首頁重設計
 - ✅ Phase 4: /calculate UI 重整
 - ✅ Phase 5: K8s 狀態強化
+- ✅ Phase 6: 部署文件強化
 
 ## Phase 1: 基礎清理（已完成）
 
@@ -80,7 +81,14 @@
 - [x] `npm run build`、test 83 passed、pint 全綠
 - [x] 本機 API smoke：`/api/k8s/status` 回 `in_cluster:false`、shape 正確
 
-## Phase 6: 部署文件強化（待開始）
+## Phase 6: 部署文件強化（已完成）
+
+- [x] [docs/deployment-guide.md](docs/deployment-guide.md) 增補：
+  - 「資源監控」段加入 [scripts/monitor-resources.sh](scripts/monitor-resources.sh) 使用說明
+  - 加入「應用程式內建狀態」段，介紹 Phase 5 強化後的 K8sStatus 卡呈現
+  - 新增「1C1G 環境調校建議」段：記憶體壓力（patch HPA、swap 確認）、CPU 持續滿載、SQLite 鎖定、SSE 連線中斷
+  - 新增「部署檢核清單」段：10 項可逐一勾選
+- [x] `php artisan test --compact`：83 passed
 
 ---
 
@@ -116,6 +124,9 @@ None
 - [resources/js/types/calculation.ts](resources/js/types/calculation.ts) — K8s types 對齊後端
 - [resources/js/components/K8sStatus.vue](resources/js/components/K8sStatus.vue) — 重寫，加 Pod 列表、HPA 進度條、本機 fallback
 
+### Phase 6
+- [docs/deployment-guide.md](docs/deployment-guide.md) — 加 monitor 腳本說明、應用程式內建狀態、1C1G 調校建議、部署檢核清單
+
 ## Verification
 
 ### Phase 1
@@ -148,6 +159,14 @@ None
 - API smoke：`/api/k8s/status` 與 `/api/k8s/metrics` 回應正確
 - 待真實叢集驗證：部署到 K3s 後手動驗證 Pod 列表、HPA 進度條呈現
 
+### Phase 6
+- `php artisan test --compact`：83 passed
+- 文件 markdown 渲染待手動於 GitHub 或 IDE preview 確認排版
+
 ## Next Steps
 
-Phase 6：1C1G 部署文件強化。更新 deployment-guide.md，補監控、故障排除、檢核清單。
+✅ 全部 6 個 phase 完成。剩餘：
+
+- 用戶手動驗收：瀏覽器訪問 `https://pi-k3s.test/` 與 `/calculate`，確認新版 UI、中文、響應式表現
+- 真實 VPS / K3s 叢集驗證 Phase 5 強化後的 K8sStatus 顯示
+- 後續可選：完整 lang/zh_TW 翻譯（目前 Laravel 內建錯誤訊息仍是英文）、SSR 啟用、首頁加入 demo 動畫等
