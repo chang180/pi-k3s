@@ -30,23 +30,22 @@ export type PiHistoryEntry = {
     pi: number;
 };
 
+export type K8sPod = {
+    name: string;
+    phase: string;
+    ready: boolean;
+};
+
 export type K8sStatusResponse = {
     in_cluster: boolean;
     pod_count: number;
-    pods: Array<{
-        name: string;
-        status: string;
-        ready: boolean;
-        node: string;
-    }>;
+    pods: K8sPod[];
     hpa: {
-        enabled: boolean;
-        min_replicas?: number;
-        max_replicas?: number;
-        current_replicas?: number;
-        cpu_target?: number;
-        cpu_current?: number;
-    } | null;
+        current_replicas: number;
+        desired_replicas: number;
+        min_replicas: number;
+        max_replicas: number;
+    };
 };
 
 export type K8sMetricsResponse = {

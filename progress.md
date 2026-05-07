@@ -2,8 +2,8 @@
 
 ## Status
 
-- **目前 phase**：Phase 5 待開始
-- **已完成 phase**：Phase 1, 2, 3, 4
+- **目前 phase**：Phase 6 待開始
+- **已完成 phase**：Phase 1, 2, 3, 4, 5
 - **上次 commit**：（將於本 phase 結束建立）
 
 ## Completed
@@ -13,6 +13,7 @@
 - ✅ Phase 2: UI 中文化
 - ✅ Phase 3: 首頁重設計
 - ✅ Phase 4: /calculate UI 重整
+- ✅ Phase 5: K8s 狀態強化
 
 ## Phase 1: 基礎清理（已完成）
 
@@ -66,7 +67,18 @@
 - [x] AiChat 維持原本（已是完整 card），不重複包裝
 - [x] `npm run build`、test、pint 全綠
 
-## Phase 5: K8s 狀態強化（待開始）
+## Phase 5: K8s 狀態強化（已完成）
+
+- [x] [resources/js/types/calculation.ts](resources/js/types/calculation.ts) — `K8sStatusResponse` 對齊後端實際輸出（`phase` 而非 `status`、移除 `node`、HPA shape）
+- [x] [resources/js/components/K8sStatus.vue](resources/js/components/K8sStatus.vue) 全面重寫：
+  - 標題列加 In-Cluster / 本機開發 標籤
+  - 本機 fallback：明確的「未在 K8s 叢集中執行」說明卡 + 半透明佔位 tiles
+  - HPA 詳情卡：副本數 + 進度條 + 擴縮中提示（desired ≠ current 時）
+  - Pod 列表：彩色狀態 dot（Running 綠 / Pending 黃 / Failed 紅）+ 截短名稱 + 未就緒徽章
+  - 合併 metrics（CPU / 記憶體）到 Pod 列表內
+- [x] 後端不需改動（[K8sClientService](app/Services/K8sClientService.php) 已提供完整資料）
+- [x] `npm run build`、test 83 passed、pint 全綠
+- [x] 本機 API smoke：`/api/k8s/status` 回 `in_cluster:false`、shape 正確
 
 ## Phase 6: 部署文件強化（待開始）
 
@@ -100,6 +112,10 @@ None
 ### Phase 4
 - [resources/js/pages/Calculate.vue](resources/js/pages/Calculate.vue) — page header、grid 響應式、Query 改折疊
 
+### Phase 5
+- [resources/js/types/calculation.ts](resources/js/types/calculation.ts) — K8s types 對齊後端
+- [resources/js/components/K8sStatus.vue](resources/js/components/K8sStatus.vue) — 重寫，加 Pod 列表、HPA 進度條、本機 fallback
+
 ## Verification
 
 ### Phase 1
@@ -125,6 +141,13 @@ None
 - `vendor/bin/pint --dirty --format agent`：passed
 - 待手動驗證：用戶在瀏覽器 https://pi-k3s.test/calculate 跑完整流程
 
+### Phase 5
+- `npm run build`：成功
+- `php artisan test --compact`：83 passed
+- `vendor/bin/pint --dirty --format agent`：passed
+- API smoke：`/api/k8s/status` 與 `/api/k8s/metrics` 回應正確
+- 待真實叢集驗證：部署到 K3s 後手動驗證 Pod 列表、HPA 進度條呈現
+
 ## Next Steps
 
-Phase 5：K8s 狀態展示強化。Pod 列表、HPA 詳情、節點資源、本機 fallback。
+Phase 6：1C1G 部署文件強化。更新 deployment-guide.md，補監控、故障排除、檢核清單。
