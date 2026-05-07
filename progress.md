@@ -2,8 +2,8 @@
 
 ## Status
 
-- **目前 phase**：Phase 3 待開始
-- **已完成 phase**：Phase 1, 2
+- **目前 phase**：Phase 4 待開始
+- **已完成 phase**：Phase 1, 2, 3
 - **上次 commit**：（將於本 phase 結束建立）
 
 ## Completed
@@ -11,6 +11,7 @@
 - ✅ Laravel 13 升級（前置任務，已 push）
 - ✅ Phase 1: 基礎清理
 - ✅ Phase 2: UI 中文化
+- ✅ Phase 3: 首頁重設計
 
 ## Phase 1: 基礎清理（已完成）
 
@@ -37,7 +38,23 @@
 - [x] `php artisan test --compact`：83 passed
 - [x] `vendor/bin/pint --dirty --format agent`：passed
 
-## Phase 3: 首頁重設計（待開始）
+## Phase 3: 首頁重設計（已完成）
+
+- [x] [Welcome.vue](resources/js/pages/Welcome.vue) 整個重寫成 Pi-K3s 主題 landing
+  - Top nav：Pi-K3s logo + 登入/註冊或儀表板
+  - Hero 區：主標「在樹莓派 K3s 上看見 π 的誕生」+ 副標 + 兩個 CTA + SVG π 視覺化
+  - 特色區：三張卡片（蒙地卡羅可視化、HPA 自動擴展、1C1G 友善）
+  - 執行原理區：四步驟說明
+  - 技術棧 + 二次 CTA 區
+  - Footer：GitHub 連結
+- [x] 主 CTA `立即體驗計算 →` 連到 `/calculate`（demo 免登入）
+- [x] 響應式：手機單欄、桌機 grid 兩欄
+- [x] Dark mode 支援（沿用 starter 機制）
+- [x] Tailwind v4 慣例：`bg-linear-to-*`（IDE diagnostic 提示後修正）
+- [x] `npm run build`：Welcome bundle 47.68 kB → 13.51 kB
+- [x] `php artisan test --compact`：83 passed
+- [x] `vendor/bin/pint --dirty --format agent`：passed
+- [x] `curl https://pi-k3s.test/`：Inertia 回傳 component=Welcome、prop canRegister 正確
 
 ## Phase 4: /calculate UI 重整（待開始）
 
@@ -69,6 +86,9 @@ None
 - 約 22 個 Vue 元件 / 頁面翻譯（auth、settings、components、Calculate、Dashboard）
 - 詳見 git diff：`git diff master~1 -- resources/`
 
+### Phase 3
+- [resources/js/pages/Welcome.vue](resources/js/pages/Welcome.vue) — 全新 Pi-K3s 主題 landing
+
 ## Verification
 
 ### Phase 1
@@ -81,6 +101,13 @@ None
 - `php artisan test --compact`：83 passed (305 assertions)
 - `vendor/bin/pint --dirty --format agent`：passed
 
+### Phase 3
+- `npm run build`：成功，Welcome bundle 大幅減重
+- `php artisan test --compact`：83 passed
+- `vendor/bin/pint --dirty --format agent`：passed
+- `curl -sk https://pi-k3s.test/`：Inertia component=Welcome 正確
+- 待手動驗證：用戶在瀏覽器 https://pi-k3s.test/ 視覺確認
+
 ## Next Steps
 
-Phase 3：首頁重設計。Welcome.vue 換成 Pi-K3s 主題 landing。
+Phase 4：/calculate UI 重整。layout 重新設計、視覺優化、移除 Query 區塊或改為歷史紀錄。
