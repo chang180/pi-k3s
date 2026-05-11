@@ -72,7 +72,9 @@ kubectl apply -f k8s/hpa.yaml
 
 **RBAC**：`serviceaccount.yaml`、`role.yaml`、`rolebinding.yaml` 讓 Laravel Pod 可讀取 Pod 與 HPA 狀態（`GET /api/k8s/status`、`GET /api/k8s/metrics`）。Deployment 使用 `serviceAccountName: laravel-app`。
 
-**HPA**：此專案在 K3s 單節點下維持 `web` 單副本，HPA 針對 `laravel-worker` 擴縮。需啟用 metrics-server（K3s 預設啟用；勿以 `--disable=metrics-server` 安裝）。
+**HPA**：此專案在 K3s 單節點下維持 `web` 單副本，HPA 針對 `laravel-worker` 擴縮（min=1、max=2）。觸發門檻為 CPU 70%（以 worker CPU request 150m 計算，絕對值約 105m）。需啟用 metrics-server（K3s 預設啟用；勿以 `--disable=metrics-server` 安裝）。
+
+**1G/1C 資源預算**：各元件 memory limits 合計 768Mi（調整前為 1130Mi），避免 1G 主機 OOM。MariaDB 以啟動參數限制 `innodb_buffer_pool_size=64M`，實際記憶體用量遠低於 limit 上限。如升級至更高規格，可調高 `hpa.yaml` 的 `maxReplicas` 與各 deployment 的 `limits`。
 
 ```bash
 # Check deployment status
@@ -204,9 +206,11 @@ kubectl rollout status deployment/laravel-app -n pi-k3s
 
 ## Runtime Layout
 
-- `laravel-app`: web pod，單副本，保留 `hostPort` 對外
-- `laravel-worker`: queue worker deployment，負責分散式計算
-- `mariadb`: 正式環境共享資料庫
-- `redis`: 同 namespace 輕量 Redis，供 queue / cache / session / lock 使用
+| 元件 | 副本 | Memory Request / Limit | CPU Request / Limit | 說明 |
+|---|---|---|---|---|
+| `laravel-app` | 1（固定） | 64Mi / 192Mi | 50m / 500m | web pod，hostPort 80/443 對外 |
+| `laravel-worker` | 1–2（HPA） | 96Mi / 192Mi | 150m / 600m | queue worker，負責分散式計算 |
+| `mariadb` | 1 | 128Mi / 256Mi | 100m / 500m | 正式環境資料庫，innodb_buffer_pool=64M |
+| `redis` | 1 | 32Mi / 128Mi | 25m / 100m | queue / cache / session / lock，maxmemory 64mb |
 
 本地開發可繼續使用 SQLite；正式環境請參考 [docs/PRODUCTION-ENV.md](../docs/PRODUCTION-ENV.md)。

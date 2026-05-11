@@ -91,6 +91,25 @@ kubectl describe pod -n pi-k3s -l app=laravel
 # - Resource constraints (check limits/requests)
 ```
 
+### 主機 OOM / 記憶體不足（1G/1C 主機）
+
+各元件 memory limits 合計約 768Mi，加上 k3s 本身約 170Mi，**接近 1G 主機上限**。
+若系統 OOM 重開機，請確認以下設定是否正確（各檔案對應的關鍵值）：
+
+| 檔案 | 關鍵設定 |
+|---|---|
+| `mariadb-deployment.yaml` | `--innodb-buffer-pool-size=64M`、limits memory `256Mi` |
+| `worker-deployment.yaml` | limits memory `192Mi` |
+| `hpa.yaml` | `maxReplicas: 2`、`averageUtilization: 70` |
+
+```bash
+# 查看目前資源分配
+kubectl describe nodes | grep -A8 "Allocated resources"
+
+# 查看各 pod 實際用量
+kubectl top pods -n pi-k3s
+```
+
 ### Database errors
 
 ```bash
