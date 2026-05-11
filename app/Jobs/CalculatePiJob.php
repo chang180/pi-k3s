@@ -9,6 +9,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 class CalculatePiJob implements ShouldQueue
 {
@@ -22,15 +24,20 @@ class CalculatePiJob implements ShouldQueue
     public int $timeout = 600;
 
     /**
+     * Retry failed chunks a few times without immediately hammering the queue.
+     *
+     * @var array<int, int>
+     */
+    public array $backoff = [1, 5, 10];
+
+    /**
      * Create a new job instance.
      */
     public function __construct(
         public int $calculationId,
         public int $chunkIndex,
         public int $chunkPoints
-    ) {
-        $this->onConnection('database');
-    }
+    ) {}
 
     /**
      * Execute the job.
@@ -65,7 +72,7 @@ class CalculatePiJob implements ShouldQueue
     {
         $lockKey = 'calculation_aggregate_'.$this->calculationId;
 
-        $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
+        $lock = Cache::lock($lockKey, 10);
         if (! $lock->get()) {
             return;
         }
@@ -100,5 +107,18 @@ class CalculatePiJob implements ShouldQueue
         } finally {
             $lock->release();
         }
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        CalculationChunk::query()
+            ->where('calculation_id', $this->calculationId)
+            ->where('chunk_index', $this->chunkIndex)
+            ->update(['status' => 'failed']);
+
+        Calculation::query()
+            ->whereKey($this->calculationId)
+            ->where('status', 'running')
+            ->update(['status' => 'failed']);
     }
 }

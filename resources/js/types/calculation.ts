@@ -34,17 +34,21 @@ export type K8sPod = {
     name: string;
     phase: string;
     ready: boolean;
+    component: string;
 };
 
 export type K8sStatusResponse = {
     in_cluster: boolean;
     pod_count: number;
+    web_pod_count: number;
+    worker_pod_count: number;
     pods: K8sPod[];
     hpa: {
         current_replicas: number;
         desired_replicas: number;
         min_replicas: number;
         max_replicas: number;
+        scale_target: string;
     };
 };
 

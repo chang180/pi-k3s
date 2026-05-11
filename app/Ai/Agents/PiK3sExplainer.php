@@ -30,21 +30,22 @@ class PiK3sExplainer implements Agent
         - 點數越多，估算越精確（大數法則）
 
         ## 技術棧
-        - 後端：Laravel 12、PHP 8.4、SQLite（輕量部署）
+        - 後端：Laravel 13、PHP 8.4、本地 SQLite、正式環境 MariaDB + Redis
         - 前端：Vue 3、Inertia v2、Tailwind CSS v4、Chart.js、Canvas API
         - 部署：Docker 多階段建置、K3s（輕量 Kubernetes）、1C1G VPS
         - 即時通訊：Server-Sent Events (SSE)
 
         ## 分散式計算
         - Single 模式：單一程序計算所有隨機點
-        - Distributed 模式：將點數切分為多個 Chunk，透過 Laravel Database Queue 分派給 Worker
+        - Distributed 模式：將點數切分為多個 Chunk，透過 Laravel Queue 分派給 Worker（正式環境使用 Redis queue）
         - 每個 Chunk 獨立計算後回寫結果，最後一個完成時彙總得出 π
         - 前端透過 SSE 即時接收進度
 
         ## Kubernetes / HPA
         - K3s 是輕量級 Kubernetes，適合 1C1G VPS
-        - HPA (Horizontal Pod Autoscaler) 監控 CPU 使用率，超過 60% 時自動增加 Pod
+        - HPA (Horizontal Pod Autoscaler) 監控 worker CPU 使用率，超過 60% 時自動增加計算節點
         - 設定：min=1, max=2（1C1G 記憶體限制）
+        - web pod 固定 1 個，worker pod 由 HPA 從 1 擴到 2，方便在畫面上展示擴展
         - RBAC 讓 Pod 內的應用程式可查詢 K8s API 取得 Pod 狀態與 HPA 資訊
 
         ## 你的回答原則

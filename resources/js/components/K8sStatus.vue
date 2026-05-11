@@ -43,6 +43,11 @@ const replicaUtilization = computed(() => {
     return Math.round((hpa.current_replicas / hpa.max_replicas) * 100);
 });
 
+const workerPods = computed(() => (status.value?.pods ?? []).filter((pod) => pod.component === 'worker'));
+const webPods = computed(() => (status.value?.pods ?? []).filter((pod) => pod.component === 'web'));
+
+const hpaExpanded = computed(() => (status.value?.hpa?.current_replicas ?? 0) >= 2);
+
 const metricsByPodName = computed(() => {
     const map: Record<string, { cpu: string; memory: string }> = {};
     for (const pod of metrics.value?.pods ?? []) {
@@ -65,6 +70,18 @@ function shortName(name: string): string {
         return name;
     }
     return parts.slice(0, -2).join('-') + '-' + parts.slice(-1)[0].slice(0, 5);
+}
+
+function componentLabel(component: string): string {
+    if (component === 'worker') {
+        return '計算';
+    }
+
+    if (component === 'web') {
+        return 'Web';
+    }
+
+    return component;
 }
 </script>
 
@@ -113,42 +130,49 @@ function shortName(name: string): string {
             <!-- In-cluster: full status -->
             <template v-else>
                 <!-- Summary tiles -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-3 gap-3">
                     <div class="rounded-lg bg-muted p-3">
-                        <div class="text-xs text-muted-foreground">Pod 數量</div>
+                        <div class="text-xs text-muted-foreground">總 Pod</div>
                         <div class="text-2xl font-bold">{{ status.pod_count }}</div>
                     </div>
                     <div class="rounded-lg bg-muted p-3">
-                        <div class="text-xs text-muted-foreground">HPA</div>
-                        <div class="text-2xl font-bold">{{ hpaActive ? '啟用中' : '未啟用' }}</div>
+                        <div class="text-xs text-muted-foreground">Web</div>
+                        <div class="text-2xl font-bold">{{ status.web_pod_count }}</div>
+                    </div>
+                    <div class="rounded-lg bg-muted p-3">
+                        <div class="text-xs text-muted-foreground">計算節點</div>
+                        <div class="text-2xl font-bold">{{ status.worker_pod_count }}</div>
                     </div>
                 </div>
 
                 <!-- HPA details -->
-                <div v-if="hpaActive" class="mt-4 rounded-lg bg-muted p-3">
+                <div v-if="hpaActive" class="mt-4 rounded-lg border p-3" :class="hpaExpanded ? 'border-green-500/40 bg-green-500/10' : 'border-sidebar-border/70 bg-muted'">
                     <div class="mb-2 flex items-center justify-between text-xs">
-                        <span class="text-muted-foreground">副本數</span>
+                        <span class="text-muted-foreground">HPA 計算節點</span>
                         <span class="font-mono">
                             {{ status.hpa.current_replicas }} / {{ status.hpa.min_replicas }}–{{ status.hpa.max_replicas }}
                         </span>
                     </div>
                     <div class="h-2 overflow-hidden rounded-full bg-background">
                         <div
-                            class="h-full rounded-full bg-linear-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                            class="h-full rounded-full bg-linear-to-r from-sky-500 to-green-500 transition-all duration-500"
                             :style="{ width: `${replicaUtilization}%` }"
                         />
+                    </div>
+                    <div class="mt-1.5 text-xs font-medium" :class="hpaExpanded ? 'text-green-700 dark:text-green-300' : 'text-muted-foreground'">
+                        {{ hpaExpanded ? '已擴展到 2 個計算節點' : '待負載升高後擴展到第 2 個計算節點' }}
                     </div>
                     <div v-if="status.hpa.desired_replicas !== status.hpa.current_replicas" class="mt-1.5 text-xs text-muted-foreground">
                         目標副本：{{ status.hpa.desired_replicas }}（擴縮中）
                     </div>
                 </div>
 
-                <!-- Pod list -->
-                <div v-if="status.pods.length" class="mt-4">
-                    <h4 class="mb-2 text-sm font-medium">Pod 列表</h4>
+                <!-- Worker list -->
+                <div v-if="workerPods.length" class="mt-4">
+                    <h4 class="mb-2 text-sm font-medium">計算節點</h4>
                     <div class="space-y-1.5">
                         <div
-                            v-for="pod in status.pods"
+                            v-for="pod in workerPods"
                             :key="pod.name"
                             class="flex items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2 text-xs"
                         >
@@ -159,6 +183,40 @@ function shortName(name: string): string {
                                     :title="pod.phase"
                                 />
                                 <span class="truncate font-mono" :title="pod.name">{{ shortName(pod.name) }}</span>
+                                <span
+                                    v-if="!pod.ready"
+                                    class="rounded bg-yellow-100 px-1 text-[10px] font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100"
+                                >
+                                    未就緒
+                                </span>
+                            </div>
+                            <div v-if="metricsByPodName[pod.name]" class="flex shrink-0 gap-3 text-muted-foreground">
+                                <span>CPU：{{ metricsByPodName[pod.name].cpu }}</span>
+                                <span>記憶體：{{ metricsByPodName[pod.name].memory }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pod list -->
+                <div v-if="webPods.length" class="mt-4">
+                    <h4 class="mb-2 text-sm font-medium">Web Pod</h4>
+                    <div class="space-y-1.5">
+                        <div
+                            v-for="pod in webPods"
+                            :key="pod.name"
+                            class="flex items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2 text-xs"
+                        >
+                            <div class="flex min-w-0 items-center gap-2">
+                                <span
+                                    class="size-2 shrink-0 rounded-full"
+                                    :class="phaseColor[pod.phase] ?? 'bg-neutral-400'"
+                                    :title="pod.phase"
+                                />
+                                <span class="truncate font-mono" :title="pod.name">{{ shortName(pod.name) }}</span>
+                                <span class="rounded bg-background px-1 text-[10px] font-medium text-muted-foreground">
+                                    {{ componentLabel(pod.component) }}
+                                </span>
                                 <span
                                     v-if="!pod.ready"
                                     class="rounded bg-yellow-100 px-1 text-[10px] font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100"

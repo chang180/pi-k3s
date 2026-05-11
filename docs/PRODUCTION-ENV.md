@@ -48,12 +48,12 @@ REDIS_PASSWORD=null
 - `mariadb`
 - `redis`
 
-這組設定只用於本地開發驗證，帳密是固定的本地值，不是正式環境設定來源。
+這組設定只用於本地開發驗證，資料庫密碼需放在已忽略版控的本機 `.env`，不是正式環境設定來源。
 
 - MariaDB database: `pi_k3s`
-- MariaDB username: `pi_k3s`
-- MariaDB password: `pi_k3s_local`
-- MariaDB root password: `root_local`
+- MariaDB username: 由本機 `.env` 的 `DOCKER_DB_USERNAME` 提供，預設 `pi_k3s`
+- MariaDB password: 由本機 `.env` 的 `DOCKER_DB_PASSWORD` 提供
+- MariaDB root password: 由本機 `.env` 的 `DOCKER_DB_ROOT_PASSWORD` 提供
 
 正式環境仍以 K3s 的 `ConfigMap` / `Secret` 為準。
 
@@ -71,8 +71,10 @@ CACHE_STORE: "redis"
 QUEUE_CONNECTION: "redis"
 SESSION_DRIVER: "redis"
 REDIS_CLIENT: "phpredis"
-REDIS_HOST: "your-redis-host"
+REDIS_HOST: "redis"
 REDIS_PORT: "6379"
+REDIS_QUEUE_RETRY_AFTER: "660"
+REDIS_QUEUE_BLOCK_FOR: "5"
 ```
 
 `k8s/secrets.yaml`：
@@ -81,7 +83,6 @@ REDIS_PORT: "6379"
 APP_KEY: <base64>
 DB_PASSWORD: <base64>
 MARIADB_ROOT_PASSWORD: <base64>
-REDIS_PASSWORD: <base64>
 ```
 
 ## K3s 拓樸
@@ -89,5 +90,6 @@ REDIS_PASSWORD: <base64>
 - `laravel-app`：web 單副本，保留 `hostPort` 對外。
 - `laravel-worker`：背景計算 worker，可由 HPA 擴縮。
 - `mariadb`：單副本共享資料庫。
+- `redis`：單副本輕量 Redis，供 queue / cache / session / lock 使用。
 
 這樣做的原因是 K3s 單節點下，web 若直接擴副本會被 `hostPort` 卡住；把可擴展能力放在 worker 比較符合目前正式環境。

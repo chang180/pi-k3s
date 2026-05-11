@@ -84,7 +84,7 @@ vi k8s/secrets.yaml
 ```bash
 # 修改 APP_URL 為你的域名或 IP
 # DB_* 設定為 MariaDB
-# REDIS_* 設定為正式環境 Redis
+# REDIS_HOST 預設為同 namespace 的 redis Service
 vi k8s/configmap.yaml
 ```
 
@@ -124,10 +124,12 @@ sudo k3s kubectl apply -f k8s/rolebinding.yaml
 sudo k3s kubectl apply -f k8s/configmap.yaml
 sudo k3s kubectl apply -f k8s/secrets.yaml
 
-# 4. 資料層（MariaDB）
+# 4. 資料層（MariaDB + Redis）
 sudo k3s kubectl apply -f k8s/mariadb-pvc.yaml
 sudo k3s kubectl apply -f k8s/mariadb-service.yaml
 sudo k3s kubectl apply -f k8s/mariadb-deployment.yaml
+sudo k3s kubectl apply -f k8s/redis-service.yaml
+sudo k3s kubectl apply -f k8s/redis-deployment.yaml
 
 # 5. 應用（Web、Worker、Service）
 sudo k3s kubectl apply -f k8s/deployment.yaml
@@ -162,6 +164,7 @@ sudo k3s kubectl get pods -n pi-k3s
 # laravel-app-xxx      1/1   Running
 # laravel-worker-xxx   1/1   Running
 # mariadb-xxx          1/1   Running
+# redis-xxx            1/1   Running
 ```
 
 ### 確認 Service
@@ -192,7 +195,7 @@ curl http://<YOUR_VPS_IP>/api/history
 
 ```bash
 sudo k3s kubectl get hpa -n pi-k3s
-# 預期：laravel-app   Deployment/laravel-worker   <cpu>%/60%   1   2
+# 預期：laravel-worker   Deployment/laravel-worker   <cpu>%/60%   1   2
 ```
 
 ## 步驟 8：HTTPS 設定（可選）
@@ -235,7 +238,8 @@ sudo k3s kubectl logs -n pi-k3s -l app=laravel
 # 常見原因：
 # - imagePullPolicy 未設為 Never（本地映像）
 # - secrets.yaml 中 APP_KEY 格式錯誤
-# - SQLite 檔案權限問題
+# - Secret / ConfigMap 缺少資料庫或 Redis 設定
+# - MariaDB / Redis 尚未就緒
 ```
 
 ### HPA 不觸發擴展
@@ -329,7 +333,7 @@ sudo k3s kubectl get all -n pi-k3s
 
 ```bash
 # 1. 把 HPA max 暫時調為 1（停止擴展）
-sudo k3s kubectl patch hpa laravel-app -n pi-k3s \
+sudo k3s kubectl patch hpa laravel-worker -n pi-k3s \
   --type='json' -p='[{"op":"replace","path":"/spec/maxReplicas","value":1}]'
 
 # 2. 確認 PHP-FPM workers（預設已是 2，不建議再降；降到 1 會卡 SSE）
@@ -346,7 +350,7 @@ K3s 的 metrics-server 本身會吃 50-80m CPU。1 vCPU 環境下：
 - 建議 HPA `targetCPUUtilizationPercentage` 設 60%（已預設）— 太高會反應太慢
 - 若連 metrics-server 都拖累，可考慮關閉 HPA 改為固定 1 副本：
   ```bash
-  sudo k3s kubectl delete hpa laravel-app -n pi-k3s
+  sudo k3s kubectl delete hpa laravel-worker -n pi-k3s
   sudo k3s kubectl scale deployment/laravel-app --replicas=1 -n pi-k3s
   ```
 

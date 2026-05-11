@@ -5,12 +5,12 @@
 ## 核心目標
 
 - 以蒙地卡羅法估算 π，並在 K3s 上以多 Pod 分散計算
-- 展示 HPA 依 CPU 負載自動擴縮（1 → 2 replicas，1C1G 可調為 3）
+- 展示 HPA 依 CPU 負載自動擴縮計算節點（`laravel-worker` 1 → 2 replicas）
 - 前端即時視覺化：投點動畫、圓周率收斂曲線、K8s 狀態與效能對比
 
 ## 技術棧
 
-- **後端**：Laravel 13、PHP 8.4+、SQLite（輕量部署）
+- **後端**：Laravel 13、PHP 8.4+、本地 SQLite、正式環境 MariaDB + Redis queue/cache
 - **前端**：Vue 3、Inertia v2、Vite、Tailwind CSS v4、Chart.js、Canvas
 - **部署**：Docker、K3s（輕量模式）、Let's Encrypt HTTPS（1C1G VPS 友善）
 
@@ -45,6 +45,7 @@ php artisan serve --host=0.0.0.0 --port=8000
 docker build -t pi-k3s:test .
 docker run -p 8080:80 pi-k3s:test
 # 或使用 Docker Compose
+printf '\nDOCKER_DB_PASSWORD=%s\nDOCKER_DB_ROOT_PASSWORD=%s\n' "$(openssl rand -base64 24)" "$(openssl rand -base64 24)" >> .env
 docker compose up
 ```
 
@@ -75,9 +76,16 @@ echo "127.0.0.1 pi-k3s.local" | sudo tee -a /etc/hosts
 
 ```bash
 # K8s 環境設定（已從版控移除，需在 VPS 上手動建立）
-cp k8s/secrets.yaml.example k8s/secrets.yaml       # 填入真正的 APP_KEY
-cp k8s/configmap.yaml.example k8s/configmap.yaml   # 修改 APP_URL 為你的域名
-cp k8s/deployment.yaml.example k8s/deployment.yaml # 啟用 HTTPS 則取消註解
+cp k8s/secrets.yaml.example k8s/secrets.yaml
+cp k8s/configmap.yaml.example k8s/configmap.yaml
+cp k8s/deployment.yaml.example k8s/deployment.yaml
+cp k8s/worker-deployment.yaml.example k8s/worker-deployment.yaml
+cp k8s/mariadb-pvc.yaml.example k8s/mariadb-pvc.yaml
+cp k8s/mariadb-deployment.yaml.example k8s/mariadb-deployment.yaml
+
+# 必填：
+# - secrets.yaml：APP_KEY、DB_PASSWORD、MARIADB_ROOT_PASSWORD
+# - configmap.yaml：APP_URL（域名或 VPS IP）
 ```
 
 #### 2. HTTPS 設定（Let's Encrypt，於 VPS 上）
@@ -109,11 +117,17 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 - 停用 Traefik、servicelb；保留 metrics-server 供 HPA 使用
 - 使用 `hostPort` 直接暴露服務，無需 ingress controller
 
+**正式環境拓樸**
+- `laravel-app`：web 單副本，保留 `hostPort` 對外服務
+- `laravel-worker`：Queue worker，由 HPA 依 CPU 擴縮（預設 1 → 2）
+- `mariadb`：共享計算結果、chunks、jobs metadata
+- `redis`：同機 K3s 內部署，作為 queue/cache/session/lock
+
 **應用容器優化**
 - PHP-FPM：static 模式、2 workers
 - PHP `memory_limit`：64MB、OPcache：48MB
 - Nginx：1 worker、256 connections
-- 僅安裝 SQLite 擴充（移除 MySQL/PostgreSQL）
+- Docker 映像支援 SQLite、MariaDB（pdo_mysql）與 Redis 擴充
 
 **系統優化**
 - 自動建立 1GB swap（swappiness=10）
@@ -134,7 +148,13 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 │   ├── namespace.yaml          # K8s namespace
 │   ├── secrets.yaml.example    # Secret 範本（APP_KEY）
 │   ├── configmap.yaml.example  # ConfigMap 範本（APP_URL 等）
-│   ├── deployment.yaml.example # Deployment 範本（含 HTTPS 註解）
+│   ├── deployment.yaml.example # Web Deployment 範本（含 HTTPS 註解）
+│   ├── worker-deployment.yaml.example # Worker Deployment 範本（HPA 擴縮目標）
+│   ├── mariadb-pvc.yaml.example # MariaDB PVC 範本
+│   ├── mariadb-deployment.yaml.example # MariaDB Deployment 範本
+│   ├── mariadb-service.yaml     # MariaDB ClusterIP service
+│   ├── redis-deployment.yaml    # Redis Deployment（同機輕量 queue/cache）
+│   ├── redis-service.yaml       # Redis ClusterIP service
 │   ├── serviceaccount.yaml     # RBAC ServiceAccount
 │   ├── role.yaml               # RBAC Role（pods、HPA）
 │   ├── rolebinding.yaml        # RBAC RoleBinding
@@ -146,11 +166,11 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 │   ├── setup-local-k3s.sh      # 本機 k3d + Ingress 設定（http://pi-k3s.local）
 │   ├── deploy-on-vps.sh        # VPS 端部署（正式環境主要入口）
 │   └── deploy-vps.sh           # 本機→VPS 傳輸部署（保留，特殊情境用）
-├── Dockerfile                  # 多階段建置（SQLite-only）
+├── Dockerfile                  # 多階段建置（PHP-FPM + Nginx + Redis/MySQL/SQLite extensions）
 └── docker-compose.yml          # 本地開發用（HTTP）
 ```
 
-> **注意**：`k8s/secrets.yaml`、`k8s/configmap.yaml`、`k8s/deployment.yaml` 包含環境特定設定（APP_KEY、域名、SSL），已從版控移除。部署時請從 `.example` 複製並填入實際值。
+> **注意**：`k8s/secrets.yaml`、`k8s/configmap.yaml`、`k8s/deployment.yaml`、`k8s/worker-deployment.yaml`、`k8s/mariadb-pvc.yaml`、`k8s/mariadb-deployment.yaml` 包含環境特定設定（APP_KEY、域名、SSL、資料庫密碼與儲存），已從版控移除。部署時請從 `.example` 複製並填入實際值。
 
 ## 效能數據
 

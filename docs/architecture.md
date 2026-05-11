@@ -8,27 +8,26 @@ graph TB
 
     subgraph K3s Cluster [K3s Cluster - 1C1G VPS]
         Ingress --> SVC[Service<br/>ClusterIP]
-        SVC --> Pod1[Laravel Pod 1<br/>Nginx + PHP-FPM]
-        SVC --> Pod2[Laravel Pod 2<br/>Nginx + PHP-FPM]
+        SVC --> Web[laravel-app<br/>Web 1 replica<br/>Nginx + PHP-FPM]
 
-        Pod1 --> SQLite[(SQLite<br/>database.sqlite)]
-        Pod2 --> SQLite
+        Web --> DB[(MariaDB<br/>shared data)]
+        Web --> Redis[(Redis<br/>queue/cache/session/lock)]
 
-        Pod1 --> QueueWorker1[Queue Worker<br/>database driver]
-        Pod2 --> QueueWorker2[Queue Worker<br/>database driver]
+        Redis --> Worker1[laravel-worker 1<br/>Queue Worker]
+        Redis --> Worker2[laravel-worker 2<br/>Queue Worker]
+        Worker1 --> DB
+        Worker2 --> DB
 
-        QueueWorker1 --> SQLite
-        QueueWorker2 --> SQLite
-
-        HPA[HPA<br/>CPU > 60%<br/>min=1, max=2] -->|scale| Pod1
-        HPA -->|scale| Pod2
+        HPA[HPA<br/>CPU > 60%<br/>min=1, max=2] -->|scale| Worker1
+        HPA -->|scale| Worker2
         MetricsServer[Metrics Server<br/>K3s 內建] -->|CPU/Memory| HPA
     end
 
     style User fill:#e0f2fe,stroke:#0284c7
     style HPA fill:#fef3c7,stroke:#d97706
     style MetricsServer fill:#fef3c7,stroke:#d97706
-    style SQLite fill:#dbeafe,stroke:#3b82f6
+    style DB fill:#dbeafe,stroke:#3b82f6
+    style Redis fill:#dcfce7,stroke:#16a34a
 ```
 
 ## 蒙地卡羅演算法流程
@@ -60,8 +59,8 @@ flowchart LR
 
 1. **POST /api/calculate** (`mode=distributed`) 建立 `Calculation` 記錄
 2. **DistributedCalculator** 將 total_points 切成多個 `CalculationChunk`
-3. 每個 chunk 發派 `CalculatePiJob` 至 **database queue**
-4. **Queue Worker**（Supervisor 管理）消費 job，各自計算後回寫 chunk 結果
+3. 每個 chunk 發派 `CalculatePiJob` 至設定的 Laravel queue（正式環境為 **Redis queue**）
+4. **laravel-worker** Pod 消費 job，各自計算後回寫 chunk 結果
 5. 最後一個 chunk 完成時，觸發彙總：加總 inside/total，計算最終 π
 6. 前端透過 **SSE** (`GET /api/calculate/{id}/stream`) 輪詢 DB 取得即時進度
 
@@ -69,18 +68,19 @@ flowchart LR
 sequenceDiagram
     participant Browser
     participant Laravel
-    participant DB as SQLite
-    participant Worker as Queue Worker
+    participant Redis
+    participant DB as MariaDB
+    participant Worker as laravel-worker
 
     Browser->>Laravel: POST /api/calculate (distributed)
     Laravel->>DB: 建立 Calculation + Chunks
-    Laravel->>DB: 排入 CalculatePiJob × K
+    Laravel->>Redis: 排入 CalculatePiJob × K
     Laravel-->>Browser: 202 Accepted
 
     Browser->>Laravel: GET /api/calculate/{id}/stream (SSE)
 
     loop 每個 Chunk
-        Worker->>DB: 取出 Job
+        Worker->>Redis: 取出 Job
         Worker->>Worker: 計算隨機點
         Worker->>DB: 更新 Chunk 結果
     end
@@ -98,9 +98,12 @@ sequenceDiagram
 | 元件 | 用途 |
 |------|------|
 | Namespace `pi-k3s` | 隔離資源 |
-| Deployment `laravel-app` | Laravel Pod（含 Nginx、PHP-FPM、Queue Worker） |
-| Service `laravel-service` | ClusterIP，Pod 間負載均衡 |
-| HPA | CPU > 60% 觸發擴展，min=1 max=2 |
+| Deployment `laravel-app` | Web Pod（Nginx + PHP-FPM），固定 1 replica |
+| Deployment `laravel-worker` | Queue Worker Pod，分散式計算的 HPA 擴縮目標 |
+| Deployment `mariadb` | 正式環境共享資料庫 |
+| Deployment `redis` | 同機輕量 Redis，供 queue/cache/session/lock 使用 |
+| Service `laravel-service` | ClusterIP，指向 web pod |
+| HPA | CPU > 60% 觸發 worker 擴展，min=1 max=2 |
 | ServiceAccount + RBAC | 讓 Pod 內可查詢 K8s API（Pod 狀態、HPA） |
 | ConfigMap / Secrets | 環境變數與敏感設定 |
 
@@ -113,11 +116,12 @@ Pod 內的 `K8sClientService` 透過 ServiceAccount token 存取 K8s API：
 
 ### 1C1G 限制與優化
 
-- **SQLite** 取代 MySQL：省去獨立 DB 程序的記憶體開銷
-- **Database Queue** 取代 Redis：Queue Worker 直接讀寫 SQLite jobs 表
+- **web 固定 1 replica**：單節點 K3s 使用 hostPort 對外，避免 web pod port 衝突
+- **worker 承接水平擴展**：HPA 只擴 `laravel-worker`，畫面可直接看到計算節點 1 → 2
+- **MariaDB + Redis 共享狀態**：多 worker 共同讀寫計算結果、queue、cache lock
 - **PHP-FPM static pool**：2 workers，避免動態 fork 的記憶體波動
 - **OPcache 48MB**：預載 PHP bytecode，降低 CPU 使用
-- **停用 Traefik**：使用 hostPort 直接暴露，省約 100MB RAM
+- **停用 Traefik**：正式 VPS 使用 hostPort 直接暴露，省約 100MB RAM
 
 ## API 端點
 

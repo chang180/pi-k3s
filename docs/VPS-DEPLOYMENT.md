@@ -301,14 +301,14 @@ sudo k3s kubectl rollout restart deployment/laravel-app -n pi-k3s
 For 1C1G VPS:
 
 - **Resource Limits**: Set appropriate CPU/memory limits (currently 500m/256Mi)
-- **Replicas**: Start with 1 replica, scale based on monitoring
-- **Database**: SQLite 適合 1C1G 低流量；無 MySQL/Redis 以節省資源
+- **Web Replicas**: Keep `laravel-app` at 1 replica because it owns `hostPort`
+- **Worker Replicas**: Let HPA scale `laravel-worker` from 1 to 2 for the demo
+- **Data Services**: MariaDB stores shared calculation data; Redis handles queue/cache/session/locks
 
 ## Next Steps
 
 After successful Phase 3 deployment:
 
 - Monitor resource usage for 24-48 hours
-- Document single-pod baseline metrics
-- Plan Phase 4 HPA configuration based on actual resource consumption
-- 1C1G 環境維持 SQLite + database queue，不增加 MySQL/Redis
+- Verify `/calculate` shows worker HPA scaling from 1 to 2 under distributed load
+- Keep `maxReplicas=2` on 1C1G unless memory headroom is confirmed

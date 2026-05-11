@@ -21,6 +21,8 @@ class K8sStatusController extends Controller
         return response()->json([
             'in_cluster' => $this->k8s->isInCluster(),
             'pod_count' => count($pods),
+            'web_pod_count' => count(array_filter($pods, fn (array $pod): bool => ($pod['component'] ?? null) === 'web')),
+            'worker_pod_count' => count(array_filter($pods, fn (array $pod): bool => ($pod['component'] ?? null) === 'worker')),
             'pods' => $pods,
             'hpa' => $hpa,
         ]);

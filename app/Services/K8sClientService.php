@@ -40,7 +40,7 @@ class K8sClientService
     /**
      * Get pods in the app namespace.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array{name: string, phase: string, ready: bool, component: string}>
      */
     public function getPods(): array
     {
@@ -60,6 +60,7 @@ class K8sClientService
                 'name' => $item['metadata']['name'] ?? '',
                 'phase' => $item['status']['phase'] ?? 'Unknown',
                 'ready' => $this->podReady($item),
+                'component' => $item['metadata']['labels']['component'] ?? $item['metadata']['labels']['app'] ?? 'unknown',
             ];
         }
 
@@ -69,7 +70,7 @@ class K8sClientService
     /**
      * Get HPA status for the deployment.
      *
-     * @return array{current_replicas: int, desired_replicas: int, min_replicas: int, max_replicas: int}
+     * @return array{current_replicas: int, desired_replicas: int, min_replicas: int, max_replicas: int, scale_target: string}
      */
     public function getHpaStatus(): array
     {
@@ -79,17 +80,19 @@ class K8sClientService
                 'desired_replicas' => 0,
                 'min_replicas' => 0,
                 'max_replicas' => 0,
+                'scale_target' => '',
             ];
         }
 
-        $url = $this->baseUrl.'/apis/autoscaling/v2/namespaces/'.$this->namespace.'/horizontalpodautoscalers/laravel-app';
-        $response = $this->request('GET', $url);
+        $response = $this->getHorizontalPodAutoscaler('laravel-worker')
+            ?? $this->getHorizontalPodAutoscaler('laravel-app');
         if (! $response) {
             return [
                 'current_replicas' => 0,
                 'desired_replicas' => 0,
                 'min_replicas' => 0,
                 'max_replicas' => 0,
+                'scale_target' => '',
             ];
         }
 
@@ -101,6 +104,7 @@ class K8sClientService
             'desired_replicas' => (int) ($status['desiredReplicas'] ?? 0),
             'min_replicas' => (int) ($spec['minReplicas'] ?? 0),
             'max_replicas' => (int) ($spec['maxReplicas'] ?? 0),
+            'scale_target' => (string) ($spec['scaleTargetRef']['name'] ?? ''),
         ];
     }
 
@@ -161,6 +165,16 @@ class K8sClientService
         }
 
         return $response->json();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function getHorizontalPodAutoscaler(string $name): ?array
+    {
+        $url = $this->baseUrl.'/apis/autoscaling/v2/namespaces/'.$this->namespace.'/horizontalpodautoscalers/'.$name;
+
+        return $this->request('GET', $url);
     }
 
     /**

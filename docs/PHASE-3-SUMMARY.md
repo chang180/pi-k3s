@@ -4,6 +4,8 @@
 
 Phase 3 focuses on deploying the pi-k3s application to a remote VPS (1C1G Ubuntu server) running K3s.
 
+> Historical note: this summary describes the original Phase 3 baseline. The current production topology uses `laravel-app` as a single web pod, HPA-scaled `laravel-worker` pods, MariaDB, and Redis. See [PRODUCTION-ENV.md](PRODUCTION-ENV.md) and [deployment-guide.md](deployment-guide.md) for the current setup.
+
 **Status**: Scripts and Documentation Ready
 **Target VPS**: ubuntu@165.154.227.179
 **Completion Date**: 2026-02-14
@@ -211,17 +213,17 @@ Additional security measures to consider:
 
 ## Next Steps (Phase 4 Preview)
 
-Phase 4 will implement:
+Original Phase 4 preview:
 
 1. **Horizontal Pod Autoscaler (HPA)**
-   - min=1、max=2（1C1G 可調 3）
+   - min=1、max=2
    - 需啟用 metrics-server
 
-2. **資料庫**（1C1G 維持 SQLite）
-   - 可選：PVC 持久化 storage（目前使用 EmptyDir）
+2. **資料庫**
+   - 現行正式環境使用 MariaDB PVC 共享計算資料
 
-3. **Queue**（已用 database driver）
-   - 1C1G 不部署 Redis；Laravel database queue 已足夠
+3. **Queue**
+   - 現行正式環境使用同機 Redis 承接 queue/cache/session/lock
 
 4. **Advanced Monitoring**
    - Prometheus metrics

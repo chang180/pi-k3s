@@ -55,6 +55,9 @@ if [ -z "$APP_KEY" ]; then
     APP_KEY="base64:PLEASE_GENERATE_KEY"
 fi
 
+LOCAL_DB_PASSWORD="${LOCAL_DB_PASSWORD:-local-db-$(date +%s)-$RANDOM}"
+LOCAL_DB_ROOT_PASSWORD="${LOCAL_DB_ROOT_PASSWORD:-local-root-$(date +%s)-$RANDOM}"
+
 cat > "$GENERATED_DIR/00-namespace.yaml" <<YAML
 apiVersion: v1
 kind: Namespace
@@ -98,8 +101,8 @@ metadata:
 type: Opaque
 stringData:
   APP_KEY: "$APP_KEY"
-  DB_PASSWORD: "pi_k3s_local"
-  REDIS_PASSWORD: ""
+  DB_PASSWORD: "$LOCAL_DB_PASSWORD"
+  MARIADB_ROOT_PASSWORD: "$LOCAL_DB_ROOT_PASSWORD"
 YAML
 
 cat > "$GENERATED_DIR/20-mariadb.yaml" <<YAML
@@ -123,13 +126,19 @@ spec:
         image: mariadb:11.4
         env:
         - name: MARIADB_ROOT_PASSWORD
-          value: root_local
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: MARIADB_ROOT_PASSWORD
         - name: MARIADB_DATABASE
           value: pi_k3s
         - name: MARIADB_USER
           value: pi_k3s
         - name: MARIADB_PASSWORD
-          value: pi_k3s_local
+          valueFrom:
+            secretKeyRef:
+              name: laravel-secrets
+              key: DB_PASSWORD
         ports:
         - containerPort: 3306
         readinessProbe:
@@ -170,6 +179,7 @@ spec:
       containers:
       - name: redis
         image: redis:7-alpine
+        args: ["redis-server", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
         ports:
         - containerPort: 6379
 ---
@@ -228,11 +238,6 @@ spec:
             secretKeyRef:
               name: laravel-secrets
               key: DB_PASSWORD
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: laravel-secrets
-              key: REDIS_PASSWORD
         - name: AUTO_MIGRATE
           value: "true"
         readinessProbe:
@@ -315,11 +320,6 @@ spec:
             secretKeyRef:
               name: laravel-secrets
               key: DB_PASSWORD
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: laravel-secrets
-              key: REDIS_PASSWORD
         - name: AUTO_MIGRATE
           value: "false"
         - name: CONTAINER_ROLE

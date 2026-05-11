@@ -1,12 +1,12 @@
 {
     "mcpServers": {
         "laravel-boost": {
-            "command": "wsl.exe",
+            "command": "/Users/changchien-wen/Library/Application Support/Herd/bin/php",
             "args": [
-                "/usr/bin/php8.4",
-                "/home/chang180/projects/pi-k3s/artisan",
+                "artisan",
                 "boost:mcp"
-            ]
+            ],
+            "cwd": "/Users/changchien-wen/Herd/pi-k3s"
         }
     }
 }

@@ -47,7 +47,7 @@ RUN npm run build
 # Stage 2: PHP Runtime (optimized for 1C1G VPS)
 FROM php:8.4-fpm-alpine
 
-# Install only necessary system dependencies and PHP extensions (SQLite-only, no MySQL/PostgreSQL)
+# Install only necessary system dependencies and PHP extensions.
 RUN apk add --no-cache \
     nginx \
     supervisor \

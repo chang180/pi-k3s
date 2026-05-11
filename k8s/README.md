@@ -61,6 +61,8 @@ kubectl apply -f k8s/rolebinding.yaml
 kubectl apply -f k8s/mariadb-pvc.yaml
 kubectl apply -f k8s/mariadb-service.yaml
 kubectl apply -f k8s/mariadb-deployment.yaml
+kubectl apply -f k8s/redis-service.yaml
+kubectl apply -f k8s/redis-deployment.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/worker-deployment.yaml
 kubectl apply -f k8s/service.yaml
@@ -205,6 +207,6 @@ kubectl rollout status deployment/laravel-app -n pi-k3s
 - `laravel-app`: web pod，單副本，保留 `hostPort` 對外
 - `laravel-worker`: queue worker deployment，負責分散式計算
 - `mariadb`: 正式環境共享資料庫
-- `redis`: 外部或自行管理的共享 queue / cache / session
+- `redis`: 同 namespace 輕量 Redis，供 queue / cache / session / lock 使用
 
 本地開發可繼續使用 SQLite；正式環境請參考 [docs/PRODUCTION-ENV.md](../docs/PRODUCTION-ENV.md)。

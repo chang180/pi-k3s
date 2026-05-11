@@ -7,12 +7,15 @@ test('k8s status returns json with pod_count and hpa', function () {
         ->assertJsonStructure([
             'in_cluster',
             'pod_count',
+            'web_pod_count',
+            'worker_pod_count',
             'pods',
             'hpa' => [
                 'current_replicas',
                 'desired_replicas',
                 'min_replicas',
                 'max_replicas',
+                'scale_target',
             ],
         ]);
 });

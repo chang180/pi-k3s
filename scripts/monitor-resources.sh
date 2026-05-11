@@ -160,7 +160,7 @@ echo ""
 echo "For HPA configuration:"
 echo "  - Set target CPU utilization: 70-80%"
 echo "  - Set target memory utilization: 75-85%"
-echo "  - Min replicas: 1, Max replicas: 3 (for 1C1G VPS)"
+echo "  - Min replicas: 1, Max replicas: 2 (for 1C1G VPS)"
 echo ""
 
 # 10. Continuous Monitoring Mode

@@ -94,11 +94,10 @@ kubectl describe pod -n pi-k3s -l app=laravel
 ### Database errors
 
 ```bash
-# The pod uses SQLite by default
+# Production K3s uses MariaDB. Check the mariadb pod and DB secrets first.
 # If you see database errors, exec into the pod:
 kubectl exec -it -n pi-k3s deployment/laravel-app -- sh
 
 # Then check:
-ls -la /var/www/html/database/
 php artisan migrate --force
 ```

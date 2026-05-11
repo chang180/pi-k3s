@@ -23,6 +23,38 @@ echo ""
 
 cd "$PROJECT_ROOT"
 
+REQUIRED_MANIFESTS=(
+    "k8s/configmap.yaml"
+    "k8s/secrets.yaml"
+    "k8s/deployment.yaml"
+    "k8s/worker-deployment.yaml"
+    "k8s/mariadb-pvc.yaml"
+    "k8s/mariadb-deployment.yaml"
+)
+
+missing_manifests=()
+for manifest in "${REQUIRED_MANIFESTS[@]}"; do
+    if [ ! -f "$manifest" ]; then
+        missing_manifests+=("$manifest")
+    fi
+done
+
+if [ "${#missing_manifests[@]}" -gt 0 ]; then
+    echo "錯誤: 缺少環境特定 Kubernetes manifest："
+    for manifest in "${missing_manifests[@]}"; do
+        echo "  - $manifest"
+    done
+    echo ""
+    echo "首次部署請先複製範本並填入正式環境設定："
+    echo "  cp k8s/configmap.yaml.example k8s/configmap.yaml"
+    echo "  cp k8s/secrets.yaml.example k8s/secrets.yaml"
+    echo "  cp k8s/deployment.yaml.example k8s/deployment.yaml"
+    echo "  cp k8s/worker-deployment.yaml.example k8s/worker-deployment.yaml"
+    echo "  cp k8s/mariadb-pvc.yaml.example k8s/mariadb-pvc.yaml"
+    echo "  cp k8s/mariadb-deployment.yaml.example k8s/mariadb-deployment.yaml"
+    exit 1
+fi
+
 # 檢查 Docker
 if ! command -v docker >/dev/null 2>&1; then
     echo "錯誤: 未找到 Docker。請先安裝："
@@ -63,10 +95,13 @@ $KUBECTL apply -f k8s/rolebinding.yaml
 $KUBECTL apply -f k8s/mariadb-pvc.yaml
 $KUBECTL apply -f k8s/mariadb-service.yaml
 $KUBECTL apply -f k8s/mariadb-deployment.yaml
+$KUBECTL apply -f k8s/redis-service.yaml
+$KUBECTL apply -f k8s/redis-deployment.yaml
 $KUBECTL apply -f k8s/deployment.yaml
 $KUBECTL apply -f k8s/worker-deployment.yaml
 $KUBECTL apply -f k8s/service.yaml
 $KUBECTL apply -f k8s/ingress.yaml
+$KUBECTL delete hpa laravel-app -n $NAMESPACE --ignore-not-found >/dev/null 2>&1 || true
 $KUBECTL apply -f k8s/hpa.yaml 2>/dev/null || true
 
 # Step 4: 觸發 rollout 並等待就緒
@@ -74,9 +109,11 @@ $KUBECTL apply -f k8s/hpa.yaml 2>/dev/null || true
 # worker deployment 不對外，作為 K3s 單節點上的可擴展計算層
 echo "[4/4] 觸發 rollout restart 並等待就緒..."
 $KUBECTL rollout restart deployment/mariadb -n $NAMESPACE
+$KUBECTL rollout restart deployment/redis -n $NAMESPACE
 $KUBECTL rollout restart deployment/laravel-app -n $NAMESPACE
 $KUBECTL rollout restart deployment/laravel-worker -n $NAMESPACE
 $KUBECTL rollout status deployment/mariadb -n $NAMESPACE --timeout=180s
+$KUBECTL rollout status deployment/redis -n $NAMESPACE --timeout=120s
 $KUBECTL rollout status deployment/laravel-app -n $NAMESPACE --timeout=180s
 $KUBECTL rollout status deployment/laravel-worker -n $NAMESPACE --timeout=180s
 

@@ -26,7 +26,7 @@ const features = [
     {
         icon: Cpu,
         title: '1C1G 友善部署',
-        description: '專為最小型 VPS 調校：K3s 輕量化、PHP-FPM 2 worker、SQLite、自動 swap。',
+        description: '專為最小型 VPS 調校：K3s 輕量化、web 單副本、worker HPA、MariaDB + Redis。',
     },
 ];
 
@@ -34,7 +34,7 @@ const steps = [
     { num: '01', title: '隨機投點', desc: '在 [0,1)² 區間以均勻分布產生 N 個點' },
     { num: '02', title: '判定圓內', desc: '若 x² + y² ≤ 1 則點落在四分之一圓內' },
     { num: '03', title: '計算 π', desc: 'π ≈ 4 × (圓內點數 / 總點數)，N 越大越收斂' },
-    { num: '04', title: '分散擴展', desc: '分散式模式下，多個 Pod 各算一段，HPA 視 CPU 負載擴縮' },
+    { num: '04', title: '分散擴展', desc: '分散式模式下，多個 worker 各算一段，HPA 視 CPU 負載擴縮' },
 ];
 </script>
 
@@ -210,7 +210,7 @@ const steps = [
                     <h2 class="text-2xl font-bold tracking-tight">技術棧</h2>
                     <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">每個元件都選擇相對輕量的方案，全部加總仍能在 1C1G 環境流暢運作。</p>
                     <div class="mt-5 flex flex-wrap gap-2">
-                        <span v-for="tag in ['Laravel 13', 'PHP 8.4', 'Vue 3', 'Inertia v3', 'Tailwind v4', 'K3s', 'SQLite', 'Chart.js']" :key="tag" class="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium dark:border-neutral-800 dark:bg-neutral-900">
+                        <span v-for="tag in ['Laravel 13', 'PHP 8.4', 'Vue 3', 'Inertia v3', 'Tailwind v4', 'K3s', 'MariaDB', 'Redis', 'Chart.js']" :key="tag" class="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium dark:border-neutral-800 dark:bg-neutral-900">
                             {{ tag }}
                         </span>
                     </div>

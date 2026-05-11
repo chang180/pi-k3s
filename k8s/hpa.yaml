@@ -3,7 +3,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: laravel-app
+  name: laravel-worker
   namespace: pi-k3s
 spec:
   scaleTargetRef:
