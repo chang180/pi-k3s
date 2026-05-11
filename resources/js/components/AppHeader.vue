@@ -36,7 +36,7 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
 import type { BreadcrumbItem, NavItem } from '@/types';
-import { dashboard } from '@/routes';
+import { dashboard, login, register } from '@/routes';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
@@ -238,7 +238,7 @@ const rightNavItems: NavItem[] = [
                         </div>
                     </div>
 
-                    <DropdownMenu>
+                    <DropdownMenu v-if="auth.user">
                         <DropdownMenuTrigger :as-child="true">
                             <Button
                                 variant="ghost"
@@ -265,6 +265,14 @@ const rightNavItems: NavItem[] = [
                             <UserMenuContent :user="auth.user" />
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    <div v-else class="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" as-child>
+                            <Link :href="login()">登入</Link>
+                        </Button>
+                        <Button size="sm" as-child>
+                            <Link :href="register()">註冊</Link>
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
