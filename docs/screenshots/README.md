@@ -4,7 +4,7 @@
 
 ## 必要截圖
 
-1. **dashboard-overview.png** — 三合一儀表板全景：控制面板 + Monte Carlo Canvas + 即時結果 + π 收斂圖 + K8s 狀態 + 效能對比
+1. **calculate-overview.png** — 計算展示全景：控制面板 + Monte Carlo Canvas + 即時結果 + π 收斂圖 + K8s 狀態 + 效能對比
 2. **kubectl-hpa.png** — `kubectl get hpa -n pi-k3s` 顯示 HPA 擴展狀態
 
 ## 可選 GIF

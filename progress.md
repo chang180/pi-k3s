@@ -15,6 +15,7 @@
 - ✅ Phase 4: /calculate UI 重整
 - ✅ Phase 5: K8s 狀態強化
 - ✅ Phase 6: 部署文件強化
+- ✅ 後續: 公開展示模式（隱藏註冊 / 登入入口）
 
 ## Phase 1: 基礎清理（已完成）
 
@@ -44,7 +45,7 @@
 ## Phase 3: 首頁重設計（已完成）
 
 - [x] [Welcome.vue](resources/js/pages/Welcome.vue) 整個重寫成 Pi-K3s 主題 landing
-  - Top nav：Pi-K3s logo + 登入/註冊或儀表板
+  - Top nav：Pi-K3s logo + 計算展示 CTA（公開 demo 不需登入）
   - Hero 區：主標「在樹莓派 K3s 上看見 π 的誕生」+ 副標 + 兩個 CTA + SVG π 視覺化
   - 特色區：三張卡片（蒙地卡羅可視化、HPA 自動擴展、1C1G 友善）
   - 執行原理區：四步驟說明
@@ -127,6 +128,12 @@ None
 ### Phase 6
 - [docs/deployment-guide.md](docs/deployment-guide.md) — 加 monitor 腳本說明、應用程式內建狀態、1C1G 調校建議、部署檢核清單
 
+### 後續：公開展示模式
+- [README.md](README.md) — 補充公開展示模式、`/calculate` 主要流程與截圖說明
+- [docs/PRODUCTION-ENV.md](docs/PRODUCTION-ENV.md) — 補充正式環境不需建立展示帳號，HPA 展示集中在 `/calculate`
+- [docs/architecture.md](docs/architecture.md) — 補充 auth 入口隱藏後的公開 demo 流程
+- [docs/screenshots/README.md](docs/screenshots/README.md) — 截圖名稱改為 `calculate-overview.png`
+
 ## Verification
 
 ### Phase 1
@@ -162,6 +169,10 @@ None
 ### Phase 6
 - `php artisan test --compact`：83 passed
 - 文件 markdown 渲染待手動於 GitHub 或 IDE preview 確認排版
+
+### 後續：公開展示模式
+- `git diff --check`：passed
+- `php artisan test --compact`：86 passed (323 assertions)
 
 ## Next Steps
 

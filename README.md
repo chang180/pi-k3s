@@ -35,7 +35,8 @@ php artisan serve --host=0.0.0.0 --port=8000
 
 瀏覽 http://localhost:8000（或 Herd：https://pi-k3s.test）
 
-- **計算頁面**：http://localhost:8000/calculate — 儀表板可選點數（10 萬 / 100 萬 / 1000 萬）、模式（single / distributed），開始/停止/重置；蒙地卡羅 Canvas、圓周率收斂圖、K8s 狀態、效能對比圖表；分散式模式以 SSE 即時顯示進度。
+- **公開展示模式**：本專案目前不需要註冊或登入；首頁、頁首與側邊欄已隱藏 auth 入口，主要流程直接進入 `/calculate`。
+- **計算頁面**：http://localhost:8000/calculate — 可選點數（10 萬 / 100 萬 / 1000 萬）、模式（single / distributed），開始/停止/重置；蒙地卡羅 Canvas、圓周率收斂圖、K8s 狀態、效能對比圖表；分散式模式以 SSE 即時顯示進度。
 - **API**：`POST/GET /api/calculate`、`GET /api/calculate/{id}/stream`（SSE）、`GET /api/history`、`GET /api/k8s/status`、`GET /api/k8s/metrics`、`POST /api/ai/ask`（AI SSE）
 - **AI 助手**：計算頁面底部整合「Ask Pi-K3s AI」聊天框，可詢問蒙地卡羅法、HPA、分散式計算等技術問題（需設定 `OPENAI_API_KEY`）
 
@@ -190,7 +191,7 @@ git clone https://github.com/chang180/pi-k3s.git && cd pi-k3s
 
 | 截圖 | 說明 |
 |------|------|
-| 儀表板全景 | 控制面板 + Monte Carlo Canvas + 即時結果 + π 收斂圖 + K8s 狀態 + 效能對比 |
+| 計算展示全景 | 控制面板 + Monte Carlo Canvas + 即時結果 + π 收斂圖 + K8s 狀態 + 效能對比 |
 | K8s HPA 擴展 | `kubectl get hpa` 顯示 CPU 觸發自動擴展 |
 
 > 截圖與 GIF 請在部署後手動截取並放入 `docs/screenshots/` 目錄。
@@ -231,6 +232,7 @@ K8s 部署時，將 key 加入 `k8s/secrets.yaml`。若未設定 key，AI 功能
 | Phase 6：測試、文件與展示 | 已完成 |
 | 後續：Laravel 13 升級 | 已完成 |
 | 後續：UI 中文化、首頁與展示頁重整 | 進行中 |
+| 後續：公開展示模式隱藏 auth 入口 | 已完成 |
 
 ## 專案計畫與分階段開發
 

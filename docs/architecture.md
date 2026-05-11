@@ -30,6 +30,15 @@ graph TB
     style Redis fill:#dcfce7,stroke:#16a34a
 ```
 
+## 公開展示模式
+
+Pi-K3s 目前定位為不需帳號的展示程式，使用者可直接從首頁進入 `/calculate` 操作。
+
+- 展示入口：`/`、`/calculate`
+- 首頁、頁首與側邊欄不顯示登入、註冊或 dashboard 入口
+- `/calculate` 承載主要展示：single / distributed 計算、SSE 進度、K8s 狀態與 HPA 擴展觀察
+- Fortify / auth 相關路徑保留於 Laravel starter kit 結構中，但不是公開 demo 的主要流程
+
 ## 蒙地卡羅演算法流程
 
 蒙地卡羅法利用隨機採樣估算圓周率 π：
