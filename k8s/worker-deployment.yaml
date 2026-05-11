@@ -113,6 +113,16 @@ spec:
             configMapKeyRef:
               name: laravel-config
               key: REDIS_PORT
+        - name: REDIS_QUEUE_RETRY_AFTER
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: REDIS_QUEUE_RETRY_AFTER
+        - name: REDIS_QUEUE_BLOCK_FOR
+          valueFrom:
+            configMapKeyRef:
+              name: laravel-config
+              key: REDIS_QUEUE_BLOCK_FOR
         - name: APP_KEY
           valueFrom:
             secretKeyRef:
