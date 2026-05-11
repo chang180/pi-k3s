@@ -151,7 +151,7 @@ spec:
         resources:
           requests:
             memory: "96Mi"
-            cpu: "100m"
+            cpu: "150m"
           limits:
-            memory: "256Mi"
-            cpu: "700m"
+            memory: "192Mi"
+            cpu: "600m"

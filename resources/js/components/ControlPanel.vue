@@ -14,11 +14,11 @@ const emit = defineEmits<{
 }>();
 
 const pointsOptions = [
-    { value: 100000, label: '10 萬點 (100K)' },
-    { value: 1000000, label: '100 萬點 (1M)' },
-    { value: 10000000, label: '1000 萬點 (10M)' },
-    { value: 30000000, label: '3000 萬點 (30M) — 建議觸發 HPA' },
-    { value: 50000000, label: '5000 萬點 (50M) — 最大值' },
+    { value: 100000, label: '10 萬點 (100K) — 不觸發 HPA' },
+    { value: 1000000, label: '100 萬點 (1M) — 不觸發 HPA' },
+    { value: 10000000, label: '1000 萬點 (10M) — 不觸發 HPA' },
+    { value: 30000000, label: '3000 萬點 (30M) — 觸發 HPA 擴展' },
+    { value: 50000000, label: '5000 萬點 (50M) — 觸發 HPA 擴展（最大值）' },
 ];
 
 const modeOptions = [

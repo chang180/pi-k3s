@@ -20,6 +20,12 @@ spec:
       containers:
       - name: mariadb
         image: mariadb:11.4
+        args:
+        - --innodb-buffer-pool-size=64M
+        - --innodb-log-file-size=16M
+        - --max-connections=25
+        - --tmp-table-size=16M
+        - --max-heap-table-size=16M
         ports:
         - containerPort: 3306
           name: mysql
@@ -46,10 +52,10 @@ spec:
               key: DB_PASSWORD
         resources:
           requests:
-            memory: "192Mi"
+            memory: "128Mi"
             cpu: "100m"
           limits:
-            memory: "384Mi"
+            memory: "256Mi"
             cpu: "500m"
         volumeMounts:
         - name: mariadb-data

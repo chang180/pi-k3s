@@ -1,5 +1,7 @@
-# HPA：1C1G 環境，min=1、max=2（記憶體考量，可依實測改為 3）
-# 需啟用 metrics-server（K3s 預設內建，若以 --disable=metrics-server 安裝則 HPA 無效）
+# HPA：1C1G 環境，min=1、max=2
+# CPU request 150m，門檻 70% = 105m 絕對觸發點
+# 記憶體 limits 已調低（768Mi），實際用量約 350Mi，雙 worker 安全
+# scaleUp 立即、scaleDown 90s 穩定視窗
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -18,4 +20,17 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 30
+        averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 90
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60
