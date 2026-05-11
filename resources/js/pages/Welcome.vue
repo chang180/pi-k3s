@@ -1,16 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { Activity, Box, Cpu, Github, Layers, ScanLine, Sparkles, Zap } from 'lucide-vue-next';
-import { calculate, dashboard, login, register } from '@/routes';
-
-withDefaults(
-    defineProps<{
-        canRegister: boolean;
-    }>(),
-    {
-        canRegister: true,
-    },
-);
+import { calculate } from '@/routes';
 
 const features = [
     {
@@ -53,27 +44,11 @@ const steps = [
             </div>
             <nav class="flex items-center gap-2 text-sm">
                 <Link
-                    v-if="$page.props.auth.user"
-                    :href="dashboard()"
+                    :href="calculate()"
                     class="rounded-md border border-neutral-200 px-4 py-1.5 transition-colors hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-900"
                 >
-                    儀表板
+                    開始 Demo
                 </Link>
-                <template v-else>
-                    <Link
-                        :href="login()"
-                        class="rounded-md px-4 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-900"
-                    >
-                        登入
-                    </Link>
-                    <Link
-                        v-if="canRegister"
-                        :href="register()"
-                        class="rounded-md border border-neutral-200 px-4 py-1.5 transition-colors hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-900"
-                    >
-                        註冊
-                    </Link>
-                </template>
             </nav>
         </header>
 
@@ -222,7 +197,7 @@ const steps = [
                         </div>
                         <div class="flex-1">
                             <h3 class="font-semibold">準備好了嗎？</h3>
-                            <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">直接進入 Demo，無需註冊；登入後可保留歷史紀錄與 AI 助手對話。</p>
+                            <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">直接進入 Demo，無需註冊或登入，所有核心展示功能都在計算頁完成。</p>
                             <Link
                                 :href="calculate()"
                                 class="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"

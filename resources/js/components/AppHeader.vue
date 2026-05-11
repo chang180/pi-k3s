@@ -1,17 +1,10 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
+import { BookOpen, Calculator, Folder, Home, Menu, Search } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -31,12 +24,10 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
 import type { BreadcrumbItem, NavItem } from '@/types';
-import { dashboard, login, register } from '@/routes';
+import { calculate, home } from '@/routes';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
@@ -46,8 +37,6 @@ const props = withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
 });
 
-const page = usePage();
-const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
 const activeItemStyles =
@@ -55,9 +44,14 @@ const activeItemStyles =
 
 const mainNavItems: NavItem[] = [
     {
-        title: '儀表板',
-        href: dashboard(),
-        icon: LayoutGrid,
+        title: '首頁',
+        href: home(),
+        icon: Home,
+    },
+    {
+        title: '計算 π',
+        href: calculate(),
+        icon: Calculator,
     },
 ];
 
@@ -146,7 +140,7 @@ const rightNavItems: NavItem[] = [
                     </Sheet>
                 </div>
 
-                <Link :href="dashboard()" class="flex items-center gap-x-2">
+                <Link :href="home()" class="flex items-center gap-x-2">
                     <AppLogo />
                 </Link>
 
@@ -238,41 +232,9 @@ const rightNavItems: NavItem[] = [
                         </div>
                     </div>
 
-                    <DropdownMenu v-if="auth.user">
-                        <DropdownMenuTrigger :as-child="true">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
-                            >
-                                <Avatar
-                                    class="size-8 overflow-hidden rounded-full"
-                                >
-                                    <AvatarImage
-                                        v-if="auth.user.avatar"
-                                        :src="auth.user.avatar"
-                                        :alt="auth.user.name"
-                                    />
-                                    <AvatarFallback
-                                        class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
-                                    >
-                                        {{ getInitials(auth.user?.name) }}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" class="w-56">
-                            <UserMenuContent :user="auth.user" />
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <div v-else class="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" as-child>
-                            <Link :href="login()">登入</Link>
-                        </Button>
-                        <Button size="sm" as-child>
-                            <Link :href="register()">註冊</Link>
-                        </Button>
-                    </div>
+                    <Button size="sm" as-child>
+                        <Link :href="calculate()">開始 Demo</Link>
+                    </Button>
                 </div>
             </div>
         </div>

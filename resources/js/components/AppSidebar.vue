@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Calculator, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Calculator, Folder, Home } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
-import NavUser from '@/components/NavUser.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -15,13 +14,13 @@ import {
 } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import AppLogo from './AppLogo.vue';
-import { calculate, dashboard } from '@/routes';
+import { calculate, home } from '@/routes';
 
 const mainNavItems: NavItem[] = [
     {
-        title: '儀表板',
-        href: dashboard(),
-        icon: LayoutGrid,
+        title: '首頁',
+        href: home(),
+        icon: Home,
     },
     {
         title: '計算 π',
@@ -50,7 +49,7 @@ const footerNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link :href="home()">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
@@ -64,7 +63,6 @@ const footerNavItems: NavItem[] = [
 
         <SidebarFooter>
             <NavFooter :items="footerNavItems" />
-            <NavUser />
         </SidebarFooter>
     </Sidebar>
     <slot />
