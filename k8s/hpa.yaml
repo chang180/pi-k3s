@@ -1,7 +1,7 @@
 # HPA：1C1G 環境，min=1、max=2
 # CPU request 150m，門檻 70% = 105m 絕對觸發點
 # 記憶體 limits 已調低（768Mi），實際用量約 350Mi，雙 worker 安全
-# scaleUp 立即、scaleDown 90s 穩定視窗
+# scaleUp 穩定視窗 30s（配合 minReadySeconds 等 metrics 就緒）、scaleDown 90s
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -23,7 +23,7 @@ spec:
         averageUtilization: 70
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 0
+      stabilizationWindowSeconds: 30
       policies:
       - type: Pods
         value: 1
