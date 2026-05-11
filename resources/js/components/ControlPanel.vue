@@ -17,6 +17,8 @@ const pointsOptions = [
     { value: 100000, label: '10 萬點 (100K)' },
     { value: 1000000, label: '100 萬點 (1M)' },
     { value: 10000000, label: '1000 萬點 (10M)' },
+    { value: 30000000, label: '3000 萬點 (30M) — 建議觸發 HPA' },
+    { value: 50000000, label: '5000 萬點 (50M) — 最大值' },
 ];
 
 const modeOptions = [

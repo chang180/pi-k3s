@@ -12,5 +12,6 @@ Route::get('/history', [CalculateController::class, 'history']);
 
 Route::get('/k8s/status', [K8sStatusController::class, 'status']);
 Route::get('/k8s/metrics', [K8sStatusController::class, 'metrics']);
+Route::get('/k8s/events', [K8sStatusController::class, 'events']);
 
 Route::post('/ai/ask', [AiController::class, 'ask']);

@@ -49,7 +49,16 @@ export type K8sStatusResponse = {
         min_replicas: number;
         max_replicas: number;
         scale_target: string;
+        cpu_utilization: number | null;
     };
+};
+
+export type K8sHpaEvent = {
+    reason: string;
+    message: string;
+    timestamp: string;
+    type: string;
+    count: number;
 };
 
 export type K8sMetricsResponse = {

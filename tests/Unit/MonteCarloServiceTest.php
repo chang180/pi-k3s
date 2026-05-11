@@ -41,7 +41,7 @@ test('calculate throws exception for points below minimum', function () {
 test('calculate throws exception for points above maximum', function () {
     $service = new MonteCarloService;
 
-    expect(fn () => $service->calculate(20000000))
+    expect(fn () => $service->calculate(60000000))
         ->toThrow(InvalidArgumentException::class);
 });
 

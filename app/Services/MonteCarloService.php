@@ -8,7 +8,7 @@ class MonteCarloService
 {
     public const MIN_POINTS = 100_000;
 
-    public const MAX_POINTS = 10_000_000;
+    public const MAX_POINTS = 50_000_000;
 
     /** Minimum points for a chunk (distributed mode splits total into smaller chunks). */
     public const MIN_CHUNK_POINTS = 1000;

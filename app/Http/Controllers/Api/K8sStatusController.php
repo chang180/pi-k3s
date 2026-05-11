@@ -40,4 +40,15 @@ class K8sStatusController extends Controller
             'pods' => $metrics,
         ]);
     }
+
+    /**
+     * GET /api/k8s/events - Recent HPA scale events.
+     */
+    public function events(): JsonResponse
+    {
+        return response()->json([
+            'in_cluster' => $this->k8s->isInCluster(),
+            'events' => $this->k8s->getHpaEvents(),
+        ]);
+    }
 }

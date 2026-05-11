@@ -70,7 +70,7 @@ class K8sClientService
     /**
      * Get HPA status for the deployment.
      *
-     * @return array{current_replicas: int, desired_replicas: int, min_replicas: int, max_replicas: int, scale_target: string}
+     * @return array{current_replicas: int, desired_replicas: int, min_replicas: int, max_replicas: int, scale_target: string, cpu_utilization: int|null}
      */
     public function getHpaStatus(): array
     {
@@ -81,6 +81,7 @@ class K8sClientService
                 'min_replicas' => 0,
                 'max_replicas' => 0,
                 'scale_target' => '',
+                'cpu_utilization' => null,
             ];
         }
 
@@ -93,11 +94,20 @@ class K8sClientService
                 'min_replicas' => 0,
                 'max_replicas' => 0,
                 'scale_target' => '',
+                'cpu_utilization' => null,
             ];
         }
 
         $status = $response['status'] ?? [];
         $spec = $response['spec'] ?? [];
+
+        $cpuUtilization = null;
+        foreach ($status['currentMetrics'] ?? [] as $metric) {
+            if (($metric['type'] ?? '') === 'Resource' && ($metric['resource']['name'] ?? '') === 'cpu') {
+                $cpuUtilization = (int) ($metric['resource']['current']['averageUtilization'] ?? 0);
+                break;
+            }
+        }
 
         return [
             'current_replicas' => (int) ($status['currentReplicas'] ?? 0),
@@ -105,7 +115,44 @@ class K8sClientService
             'min_replicas' => (int) ($spec['minReplicas'] ?? 0),
             'max_replicas' => (int) ($spec['maxReplicas'] ?? 0),
             'scale_target' => (string) ($spec['scaleTargetRef']['name'] ?? ''),
+            'cpu_utilization' => $cpuUtilization,
         ];
+    }
+
+    /**
+     * Get recent HPA scale events.
+     *
+     * @return array<int, array{reason: string, message: string, timestamp: string, type: string}>
+     */
+    public function getHpaEvents(): array
+    {
+        if (! $this->isInCluster()) {
+            return [];
+        }
+
+        $url = $this->baseUrl.'/api/v1/namespaces/'.$this->namespace.'/events'
+            .'?fieldSelector=involvedObject.kind=HorizontalPodAutoscaler,involvedObject.name=laravel-worker'
+            .'&limit=20';
+
+        $response = $this->request('GET', $url);
+        if (! $response || ! isset($response['items'])) {
+            return [];
+        }
+
+        $events = [];
+        foreach ($response['items'] as $item) {
+            $events[] = [
+                'reason' => $item['reason'] ?? '',
+                'message' => $item['message'] ?? '',
+                'timestamp' => $item['lastTimestamp'] ?? ($item['eventTime'] ?? ''),
+                'type' => $item['type'] ?? 'Normal',
+                'count' => (int) ($item['count'] ?? 1),
+            ];
+        }
+
+        usort($events, fn ($a, $b) => strcmp($b['timestamp'], $a['timestamp']));
+
+        return array_slice($events, 0, 20);
     }
 
     /**
